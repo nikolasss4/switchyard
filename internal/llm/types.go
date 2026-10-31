@@ -33,6 +33,9 @@ type Request struct {
 	// fields the gateway does not model, such as thinking or output_config,
 	// survive the round trip.
 	Raw json.RawMessage `json:"-"`
+	// Betas are anthropic-beta header values from the client, forwarded to
+	// Anthropic upstreams only.
+	Betas []string `json:"-"`
 }
 
 type requestAlias Request
@@ -254,6 +257,10 @@ type Event struct {
 	Delta        *Delta    `json:"delta,omitempty"`
 	Usage        *Usage    `json:"usage,omitempty"`
 	Error        *APIError `json:"error,omitempty"`
+
+	// Raw is the event's data as an Anthropic upstream sent it; the Anthropic
+	// surface relays it unchanged.
+	Raw []byte `json:"-"`
 }
 
 // Delta is the delta of a content_block_delta or message_delta event.
