@@ -1,7 +1,8 @@
 name: bench
 
-# Load and chaos benchmarks against the mock provider, with real Postgres and
-# Redis service containers. Run by hand; results are uploaded as an artifact.
+# Load and chaos benchmarks against the mock provider, with Postgres as a
+# service container and Redis on host networking (no userland port proxy on the
+# hot path; Redis is on loopback, as it would be a LAN hop away in production). Run by hand; results are uploaded as an artifact.
 on:
   workflow_dispatch:
     inputs:
@@ -23,9 +24,6 @@ jobs:
         env: {POSTGRES_PASSWORD: postgres}
         ports: ["5432:5432"]
         options: --health-cmd "pg_isready -U postgres" --health-interval 2s --health-retries 20
-      redis:
-        image: redis:7-alpine
-        ports: ["6379:6379"]
     env:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
       REDIS_URL: redis://localhost:6379/0
@@ -43,13 +41,16 @@ jobs:
       - name: run
         run: |
           ulimit -n "$(ulimit -Hn)"; ulimit -n
+          docker run -d --name redis-host --network host redis:7-alpine > /dev/null
+          for i in $(seq 50); do docker exec redis-host redis-cli ping && break; sleep 0.2; done
           ./bin/mockllm -addr 127.0.0.1:9101 -name mock-a > mock-a.log 2>&1 &
           ./bin/mockllm -addr 127.0.0.1:9102 -name mock-b > mock-b.log 2>&1 &
           ./bin/switchyard -config configs/bench.yaml > gateway.log 2>&1 &
           for i in $(seq 50); do curl -sf localhost:8080/healthz && break; sleep 0.2; done
           lscpu > bench-lscpu.txt; free -m > bench-free.txt
-          ./bin/swbench ${{ inputs.quick && '-quick' || '' }} -out bench/out 2>&1 | tee bench/out-log.txt
-          cp bench-lscpu.txt bench-free.txt bench/out-log.txt bench/out/
+          mkdir -p bench/out
+          ./bin/swbench ${{ inputs.quick && '-quick' || '' }} -out bench/out 2>&1 | tee bench/out/log.txt
+          cp bench-lscpu.txt bench-free.txt bench/out/
           tail -n 50 gateway.log
       - uses: actions/upload-artifact@v4
         if: always()

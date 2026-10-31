@@ -12,6 +12,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"runtime"
 	"sync"
 	"time"
 
@@ -69,10 +70,14 @@ func (g *Gateway) Begin(ctx context.Context, c *Call) context.Context {
 // Gateway runs requests through admission, the router and accounting.
 type Gateway struct {
 	Deps
-	now func() time.Time
+	now  func() time.Time
+	acct chan func()
+	wg   sync.WaitGroup
 }
 
-// New returns a gateway.
+// New returns a gateway. Accounting after a request (TPM settlement, spend,
+// usage record, metrics) runs on a pool of workers, off the response path; when
+// the queue is full it runs inline, which slows clients instead of losing it.
 func New(d Deps) *Gateway {
 	if d.Usage == nil {
 		d.Usage = usage.Discard{}
@@ -80,7 +85,23 @@ func New(d Deps) *Gateway {
 	if d.Log == nil {
 		d.Log = slog.New(slog.DiscardHandler)
 	}
-	return &Gateway{Deps: d, now: time.Now}
+	g := &Gateway{Deps: d, now: time.Now, acct: make(chan func(), 16384)}
+	for range 4 * runtime.GOMAXPROCS(0) {
+		g.wg.Add(1)
+		go func() {
+			defer g.wg.Done()
+			for f := range g.acct {
+				f()
+			}
+		}()
+	}
+	return g
+}
+
+// Close waits for queued accounting to finish.
+func (g *Gateway) Close() {
+	close(g.acct)
+	g.wg.Wait()
 }
 
 // Call is one request moving through the pipeline.
@@ -136,39 +157,58 @@ func (g *Gateway) Admit(ctx context.Context, c *Call) error {
 		return &Error{Status: http.StatusForbidden, Type: "permission_error", Message: fmt.Sprintf("this key may not use model %q", route.Alias)}
 	}
 
-	if c.Key.MonthlyBudgetUSD != nil && g.Spend != nil {
-		spent, err := g.Spend.Spent(ctx, c.Key.ID, g.now())
-		if err != nil {
+	var buckets []limiter.Bucket
+	tpm := limit(c.Key.TPM, g.Defaults.TPM)
+	if g.Limiter != nil {
+		if rpm := limit(c.Key.RPM, g.Defaults.RPM); rpm > 0 {
+			buckets = append(buckets, limiter.Bucket{Key: c.Key.ID + ":rpm", PerMinute: rpm, Cost: 1})
+		}
+		if tpm > 0 {
+			c.reserved = EstimateInputTokens(c.Req)
+			buckets = append(buckets, limiter.Bucket{Key: c.Key.ID + ":tpm", PerMinute: tpm, Cost: c.reserved})
+		}
+	}
+
+	// The budget read and the bucket take are independent round trips to
+	// Redis, so they run concurrently.
+	var spent float64
+	var spendErr error
+	checkBudget := c.Key.MonthlyBudgetUSD != nil && g.Spend != nil
+	var budgetDone chan struct{}
+	if checkBudget {
+		budgetDone = make(chan struct{})
+		go func() {
+			defer close(budgetDone)
+			spent, spendErr = g.Spend.Spent(ctx, c.Key.ID, g.now())
+		}()
+	}
+	var d limiter.Decision
+	var takeErr error
+	if len(buckets) > 0 {
+		d, takeErr = g.Limiter.Take(ctx, buckets)
+	} else {
+		d.Allowed = true
+	}
+	if checkBudget {
+		<-budgetDone
+		if spendErr != nil {
 			// Fail open: a Redis outage should not take every tenant down.
-			g.Log.Warn("budget check failed; allowing request", "key", c.Key.ID, "err", err)
+			g.Log.Warn("budget check failed; allowing request", "key", c.Key.ID, "err", spendErr)
 		} else {
 			c.Budget = budget.Evaluate(spent, c.Key.MonthlyBudgetUSD, c.Key.SoftBudgetRatio)
 			if c.Budget == budget.Hard {
+				if takeErr == nil && d.Allowed {
+					g.refund(buckets)
+				}
+				c.reserved = 0
 				// 402, not 429: SDKs retry 429s, and waiting does not help here.
 				return &Error{Status: http.StatusPaymentRequired, Type: "budget_exceeded",
 					Message: fmt.Sprintf("monthly budget of $%.2f reached ($%.2f spent)", *c.Key.MonthlyBudgetUSD, spent)}
 			}
 		}
 	}
-
-	if g.Limiter == nil {
-		return nil
-	}
-	var buckets []limiter.Bucket
-	if rpm := limit(c.Key.RPM, g.Defaults.RPM); rpm > 0 {
-		buckets = append(buckets, limiter.Bucket{Key: c.Key.ID + ":rpm", PerMinute: rpm, Cost: 1})
-	}
-	tpm := limit(c.Key.TPM, g.Defaults.TPM)
-	if tpm > 0 {
-		c.reserved = EstimateInputTokens(c.Req)
-		buckets = append(buckets, limiter.Bucket{Key: c.Key.ID + ":tpm", PerMinute: tpm, Cost: c.reserved})
-	}
-	if len(buckets) == 0 {
-		return nil
-	}
-	d, err := g.Limiter.Take(ctx, buckets)
-	if err != nil {
-		g.Log.Warn("rate limit check failed; allowing request", "key", c.Key.ID, "err", err)
+	if takeErr != nil {
+		g.Log.Warn("rate limit check failed; allowing request", "key", c.Key.ID, "err", takeErr)
 		c.reserved = 0
 		return nil
 	}
@@ -186,6 +226,17 @@ func (g *Gateway) Admit(ctx context.Context, c *Call) error {
 			Message: fmt.Sprintf("rate limit exceeded (%s per minute)", what)}
 	}
 	return nil
+}
+
+// refund gives back what a refused request took from its buckets.
+func (g *Gateway) refund(buckets []limiter.Bucket) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	for _, b := range buckets {
+		if err := g.Limiter.Adjust(ctx, b, b.Cost); err != nil {
+			g.Log.Warn("refund failed", "bucket", b.Key, "err", err)
+		}
+	}
 }
 
 func limit(own *int, def int) int {
@@ -261,8 +312,18 @@ func fillTarget(o *Outcome, res *router.Result) {
 	o.Attempts, o.FallbackDepth, o.Hedged = res.Attempts, res.FallbackDepth, res.Hedged
 }
 
-// Finish settles accounting for a call. It is safe to call once per call.
+// Finish settles accounting for a call, asynchronously. Call it once per call.
 func (g *Gateway) Finish(c *Call, o *Outcome) {
+	end := g.now()
+	f := func() { g.finish(c, o, end) }
+	select {
+	case g.acct <- f:
+	default:
+		f()
+	}
+}
+
+func (g *Gateway) finish(c *Call, o *Outcome, end time.Time) {
 	if o.Err != nil && o.Status == http.StatusOK {
 		o.Status = StatusOf(o.Err)
 	}
@@ -301,7 +362,7 @@ func (g *Gateway) Finish(c *Call, o *Outcome) {
 		Provider: o.Provider, Model: o.Model, Cache: o.Cache, Attempts: o.Attempts, FallbackDepth: o.FallbackDepth,
 		InputTokens: o.Usage.InputTokens, OutputTokens: o.Usage.OutputTokens,
 		CacheReadTokens: o.Usage.CacheReadInputTokens, CacheWriteTokens: o.Usage.CacheCreationInputTokens,
-		CostUSD: cost, PriceVersion: g.Prices.Version, LatencyMS: int(g.now().Sub(c.Start).Milliseconds()),
+		CostUSD: cost, PriceVersion: g.Prices.Version, LatencyMS: int(end.Sub(c.Start).Milliseconds()),
 	}
 	if c.Key != nil {
 		rec.KeyID, rec.TenantID = c.Key.ID, c.Key.TenantID

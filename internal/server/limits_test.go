@@ -134,3 +134,14 @@ func TestModelAllowlist(t *testing.T) {
 		t.Fatalf("status %d", resp.StatusCode)
 	}
 }
+
+func TestBudgetRefusalDoesNotSpendRateTokens(t *testing.T) {
+	h := newHarness(t)
+	limit, rpm := 0.0, 1
+	key, _ := h.keys.NewStaticKey(auth.Key{TenantID: "t1", MonthlyBudgetUSD: &limit, RPM: &rpm})
+	for range 3 {
+		if resp := h.postKey(t, key, "/v1/chat/completions", hello); resp.StatusCode != 402 {
+			t.Fatalf("status %d, want 402 every time (not 429)", resp.StatusCode)
+		}
+	}
+}

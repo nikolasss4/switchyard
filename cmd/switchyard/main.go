@@ -75,6 +75,9 @@ func run(cfgPath string, log *slog.Logger) error {
 		if err != nil {
 			return err
 		}
+		// Every request makes a few round trips; size the pool for concurrency.
+		opt.PoolSize = max(opt.PoolSize, 512)
+		opt.MinIdleConns = 32
 		rdb := redis.NewClient(opt)
 		defer rdb.Close()
 		if err := rdb.Ping(ctx).Err(); err != nil {
@@ -121,6 +124,7 @@ func run(cfgPath string, log *slog.Logger) error {
 		Router: rt, Limiter: lim, Spend: spend, Prices: prices,
 		Usage: writer, Defaults: cfg.Limits, Log: log, Caches: caches, Observer: obs,
 	})
+	defer gw.Close() // runs before writer.Close, so queued accounting is written
 	authn := auth.NewAuthenticator(db, 30*time.Second)
 	srv := server.New(gw, authn, log)
 

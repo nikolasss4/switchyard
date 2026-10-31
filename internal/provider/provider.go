@@ -109,8 +109,11 @@ func retryAfter(h http.Header) time.Duration {
 // hosts. Per-request deadlines come from the request context, not the client.
 func NewHTTPClient() *http.Client {
 	tr := http.DefaultTransport.(*http.Transport).Clone()
-	tr.MaxIdleConns = 1024
-	tr.MaxIdleConnsPerHost = 512
+	// Keep the idle pool at least as large as the expected concurrency per
+	// upstream: a smaller pool closes and reopens connections under load, and
+	// the TIME_WAIT churn runs a host out of ephemeral ports.
+	tr.MaxIdleConns = 8192
+	tr.MaxIdleConnsPerHost = 4096
 	tr.IdleConnTimeout = 90 * time.Second
 	tr.ResponseHeaderTimeout = 0
 	return &http.Client{Transport: tr}
