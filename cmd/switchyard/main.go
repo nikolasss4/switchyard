@@ -16,6 +16,7 @@ import (
 
 	"github.com/nikolasss4/switchyard/internal/auth"
 	"github.com/nikolasss4/switchyard/internal/budget"
+	"github.com/nikolasss4/switchyard/internal/cache"
 	"github.com/nikolasss4/switchyard/internal/config"
 	"github.com/nikolasss4/switchyard/internal/gateway"
 	"github.com/nikolasss4/switchyard/internal/limiter"
@@ -61,6 +62,7 @@ func run(cfgPath string, log *slog.Logger) error {
 
 	var lim limiter.Limiter
 	var spend budget.Counter
+	var exact cache.Exact
 	if redisURL := os.Getenv("REDIS_URL"); redisURL != "" {
 		opt, err := redis.ParseURL(redisURL)
 		if err != nil {
@@ -73,18 +75,31 @@ func run(cfgPath string, log *slog.Logger) error {
 		}
 		lim = limiter.NewRedis(rdb, "sy:rl:")
 		spend = budget.NewRedis(rdb, "sy:spend:", db.SpendSince)
+		exact = cache.NewRedisExact(rdb, "sy:cache:")
 	} else {
-		log.Warn("REDIS_URL not set: rate limits and budgets are per instance")
-		lim, spend = limiter.NewMemory(), budget.NewMemory()
+		log.Warn("REDIS_URL not set: rate limits, budgets and the exact cache are per instance")
+		lim, spend, exact = limiter.NewMemory(), budget.NewMemory(), cache.NewMemoryExact()
 	}
 
 	writer := usage.NewWriter(db.InsertUsage, log, 50_000, 500, time.Second)
 	defer writer.Close()
 
 	providers := provider.FromConfig(cfg, provider.NewHTTPClient())
+	caches := gateway.Caches{Exact: exact}
+	if semanticEnabled(cfg) {
+		if cfg.Embedder == nil {
+			return errors.New("a model enables the semantic cache but no embedder is configured")
+		}
+		vec, err := cache.NewPgvector(ctx, db.Pool)
+		if err != nil {
+			return err
+		}
+		caches.Vectors = vec
+		caches.Embedder = &router.Target{Provider: providers[cfg.Embedder.Provider], Model: cfg.Embedder.Model}
+	}
 	gw := gateway.New(gateway.Deps{
 		Router: router.New(cfg, providers), Limiter: lim, Spend: spend, Prices: prices,
-		Usage: writer, Defaults: cfg.Limits, Log: log,
+		Usage: writer, Defaults: cfg.Limits, Log: log, Caches: caches,
 	})
 	srv := server.New(gw, auth.NewAuthenticator(db, 30*time.Second), log)
 
@@ -104,6 +119,15 @@ func run(cfgPath string, log *slog.Logger) error {
 	shutdown, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	return httpSrv.Shutdown(shutdown)
+}
+
+func semanticEnabled(cfg *config.Config) bool {
+	for _, m := range cfg.Models {
+		if m.Cache.Semantic.Enabled {
+			return true
+		}
+	}
+	return false
 }
 
 func envOr(key, def string) string {

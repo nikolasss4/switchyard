@@ -17,6 +17,7 @@ import (
 
 	"github.com/nikolasss4/switchyard/internal/auth"
 	"github.com/nikolasss4/switchyard/internal/budget"
+	"github.com/nikolasss4/switchyard/internal/cache"
 	"github.com/nikolasss4/switchyard/internal/config"
 	"github.com/nikolasss4/switchyard/internal/limiter"
 	"github.com/nikolasss4/switchyard/internal/llm"
@@ -47,6 +48,7 @@ type Deps struct {
 	Usage    usage.Sink
 	Defaults config.Limits
 	Log      *slog.Logger
+	Caches   Caches
 }
 
 // Gateway runs requests through admission, the router and accounting.
@@ -196,25 +198,39 @@ func EstimateInputTokens(r *llm.Request) int {
 
 // Complete runs a non-streaming call.
 func (g *Gateway) Complete(ctx context.Context, c *Call) (*llm.Response, *Outcome, error) {
+	hit, kind, p := g.lookup(ctx, c)
+	if hit != nil {
+		return hit, &Outcome{Status: http.StatusOK, Cache: kind, Usage: hit.Usage}, nil
+	}
 	resp, res, err := g.Router.Complete(ctx, c.Route, c.Req)
 	o := &Outcome{Status: http.StatusOK, Err: err}
 	fillTarget(o, res)
 	if err == nil {
 		o.Usage = resp.Usage
+		g.fill(p, resp)
 	}
 	return resp, o, err
 }
 
 // Stream opens a streaming call. The returned stream finishes the call when it
-// ends, fails or is closed.
+// ends, fails or is closed. A cache hit is replayed as a stream.
 func (g *Gateway) Stream(ctx context.Context, c *Call) (provider.Stream, *Outcome, error) {
+	hit, kind, p := g.lookup(ctx, c)
+	if hit != nil {
+		o := &Outcome{Status: http.StatusOK, Cache: kind}
+		return &metered{Stream: cache.NewReplay(hit), g: g, c: c, o: o}, o, nil
+	}
 	s, res, err := g.Router.Stream(ctx, c.Route, c.Req)
 	o := &Outcome{Status: http.StatusOK, Err: err}
 	fillTarget(o, res)
 	if err != nil {
 		return nil, o, err
 	}
-	return &metered{Stream: s, g: g, c: c, o: o}, o, nil
+	m := &metered{Stream: s, g: g, c: c, o: o}
+	if p != nil {
+		m.asm, m.pending = cache.NewAssembler(), p
+	}
+	return m, o, nil
 }
 
 func fillTarget(o *Outcome, res *router.Result) {
@@ -328,6 +344,8 @@ type metered struct {
 	o       *Outcome
 	once    sync.Once
 	gotStop bool
+	asm     *cache.Assembler
+	pending *pending
 }
 
 func (m *metered) Next() (*llm.Event, error) {
@@ -338,6 +356,9 @@ func (m *metered) Next() (*llm.Event, error) {
 		}
 		m.finish()
 		return nil, err
+	}
+	if m.asm != nil {
+		m.asm.Add(ev)
 	}
 	if m.o.TTFT == 0 && ev.IsContent() {
 		m.o.TTFT = m.g.now().Sub(m.c.Start)
@@ -362,6 +383,11 @@ func (m *metered) Next() (*llm.Event, error) {
 		}
 	case llm.EventMessageStop:
 		m.gotStop = true
+		if m.asm != nil {
+			if resp, ok := m.asm.Response(); ok {
+				m.g.fill(m.pending, resp)
+			}
+		}
 	}
 	return ev, nil
 }

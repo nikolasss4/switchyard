@@ -13,6 +13,7 @@ import (
 
 	"github.com/nikolasss4/switchyard/internal/auth"
 	"github.com/nikolasss4/switchyard/internal/budget"
+	"github.com/nikolasss4/switchyard/internal/cache"
 	"github.com/nikolasss4/switchyard/internal/config"
 	"github.com/nikolasss4/switchyard/internal/gateway"
 	"github.com/nikolasss4/switchyard/internal/limiter"
@@ -51,6 +52,13 @@ models:
     targets: [{provider: mock-oai, model: mock-fast}]
   - alias: via-anthropic
     targets: [{provider: mock-anth, model: mock-smart}]
+  - alias: cached
+    cache: {exact: true, ttl: 1m}
+    targets: [{provider: mock-anth, model: mock-fast}]
+  - alias: semantic
+    cache: {semantic: {enabled: true, threshold: 0.9}}
+    targets: [{provider: mock-oai, model: mock-fast}]
+embedder: {provider: mock-oai, model: embed}
 `))
 	if err != nil {
 		t.Fatal(err)
@@ -61,9 +69,12 @@ models:
 	}
 	h := &harness{mock: m, keys: auth.Static{}, usage: &usage.Memory{}, spend: budget.NewMemory(), limiter: limiter.NewMemory()}
 	h.key, _ = h.keys.NewStaticKey(auth.Key{TenantID: "t1", Name: "default"})
+	providers := provider.FromConfig(cfg, provider.NewHTTPClient())
 	g := gateway.New(gateway.Deps{
-		Router:  router.New(cfg, provider.FromConfig(cfg, provider.NewHTTPClient())),
+		Router:  router.New(cfg, providers),
 		Limiter: h.limiter, Spend: h.spend, Prices: prices, Usage: h.usage,
+		Caches: gateway.Caches{Exact: cache.NewMemoryExact(), Vectors: cache.NewMemoryVectors(),
+			Embedder: &router.Target{Provider: providers["mock-oai"], Model: "embed"}},
 	})
 	h.gateway = httptest.NewServer(New(g, auth.NewAuthenticator(h.keys, time.Minute), slog.New(slog.DiscardHandler)).Handler())
 	t.Cleanup(h.gateway.Close)
