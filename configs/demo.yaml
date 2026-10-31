@@ -1,0 +1,55 @@
+# The docker compose demo: two mock providers, so routing, fallbacks, caching
+# and budgets can be watched without any API key. Real providers are below,
+# commented in by setting their API keys.
+listen: ":8080"
+metrics_listen: ":9091"
+pricing: /etc/switchyard/prices.yaml
+
+providers:
+  - {name: mock-a, type: openai, base_url: "http://mock-a:9000/v1"}
+  - {name: mock-b, type: anthropic, base_url: "http://mock-b:9000"}
+  - {name: anthropic, type: anthropic, base_url: "https://api.anthropic.com", api_key_env: ANTHROPIC_API_KEY}
+  # An OpenAI-compatible server on the host (mlx_lm.server, vLLM, Ollama).
+  - {name: local, type: openai, base_url: "http://host.docker.internal:8081/v1"}
+
+models:
+  - alias: fast
+    targets:
+      - {provider: mock-a, model: mock-fast}
+      - {provider: mock-b, model: mock-fast}
+    cache: {exact: true, ttl: 10m}
+  - alias: smart
+    timeout: 60s
+    targets:
+      - {provider: mock-b, model: mock-smart}
+      - {provider: mock-a, model: mock-smart}
+  - alias: hedged
+    hedge_after: 150ms
+    targets:
+      - {provider: mock-a, model: mock-fast}
+      - {provider: mock-b, model: mock-fast}
+  - alias: faq
+    cache: {semantic: {enabled: true, threshold: 0.92}, ttl: 1h}
+    targets: [{provider: mock-a, model: mock-fast}]
+  - alias: embed
+    targets: [{provider: mock-a, model: mock-embed}]
+  # Real models; these need ANTHROPIC_API_KEY.
+  - alias: haiku
+    targets: [{provider: anthropic, model: claude-haiku-5-5}]
+  - alias: sonnet
+    targets: [{provider: anthropic, model: claude-sonnet-5-5}, {provider: anthropic, model: claude-haiku-5-5}]
+  - alias: opus
+    targets: [{provider: anthropic, model: claude-opus-5-5}, {provider: anthropic, model: claude-sonnet-5-5}]
+  - alias: local
+    targets: [{provider: local, model: default}]
+
+rules:
+  # Batch traffic is sent to the cheap alias whatever it asked for.
+  - when: {headers: {X-Switchyard-Tier: batch}}
+    use: fast
+
+embedder: {provider: mock-a, model: mock-embed}
+
+retry: {max_attempts: 2, base_delay: 50ms, max_delay: 1s}
+breaker: {window: 20, min_requests: 10, failure_rate: 0.5, open_for: 5s, half_open_probes: 3}
+limits: {rpm: 6000, tpm: 2000000}

@@ -162,3 +162,18 @@ func (s *Store) SetKeyLimits(ctx context.Context, id string, l KeyLimits) error 
 	}
 	return err
 }
+
+// SeedKey inserts a key with a known plaintext if its id is not taken. It is
+// for demo setups only (docker compose), where the quickstart needs a fixed key.
+func (s *Store) SeedKey(ctx context.Context, tenantID, name, plaintext string) error {
+	id, secret, err := auth.Parse(plaintext)
+	if err != nil {
+		return err
+	}
+	if err := s.UpsertTenant(ctx, Tenant{ID: tenantID, Name: tenantID}); err != nil {
+		return err
+	}
+	_, err = s.Pool.Exec(ctx, `INSERT INTO api_keys (id, tenant_id, name, secret_hash) VALUES ($1, $2, $3, $4)
+		ON CONFLICT (id) DO NOTHING`, id, tenantID, name, auth.HashSecret(secret))
+	return err
+}

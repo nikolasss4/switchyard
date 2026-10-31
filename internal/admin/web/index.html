@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Switchyard admin</title>
+<style>
+  :root { --bg:#0f1115; --panel:#171a21; --line:#272b35; --text:#e6e8ee; --muted:#8b91a1; --ok:#3fb68b; --warn:#e0a63a; --bad:#e5534b; --accent:#6d9eff; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; background:var(--bg); color:var(--text); }
+  header { display:flex; align-items:center; gap:16px; padding:14px 24px; border-bottom:1px solid var(--line); }
+  header h1 { font-size:16px; margin:0; letter-spacing:.02em; }
+  header .muted { margin-left:auto; }
+  main { padding:20px 24px; display:grid; gap:20px; max-width:1200px; }
+  section { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:16px; overflow-x:auto; }
+  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin:0 0 12px; }
+  table { width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; }
+  th, td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  th { color:var(--muted); font-weight:500; }
+  td.num, th.num { text-align:right; }
+  .muted { color:var(--muted); }
+  .pill { display:inline-block; padding:1px 8px; border-radius:999px; font-size:12px; border:1px solid currentColor; }
+  .closed, .ok { color:var(--ok); } .half_open, .soft { color:var(--warn); } .open, .hard, .revoked { color:var(--bad); }
+  input, button { font:inherit; color:var(--text); background:#0c0e12; border:1px solid var(--line); border-radius:6px; padding:6px 10px; }
+  button { cursor:pointer; background:#1f2430; } button:hover { border-color:var(--accent); }
+  form { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  #created { margin-top:10px; font-family:ui-monospace, monospace; color:var(--warn); word-break:break-all; }
+  #err { color:var(--bad); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Switchyard</h1>
+  <form id="login"><input id="token" type="password" placeholder="admin token" autocomplete="off"><button>Connect</button></form>
+  <span id="err"></span>
+  <span class="muted" id="updated"></span>
+</header>
+<main>
+  <section><h2>Provider health</h2><table id="providers"></table></section>
+  <section><h2>Keys and budgets</h2><table id="keys"></table>
+    <form id="newkey" style="margin-top:12px">
+      <input name="tenant_id" placeholder="tenant" required>
+      <input name="name" placeholder="key name" required>
+      <input name="rpm" type="number" min="0" placeholder="RPM">
+      <input name="tpm" type="number" min="0" placeholder="TPM">
+      <input name="monthly_budget_usd" type="number" min="0" step="0.01" placeholder="budget $/month">
+      <button>Create key</button>
+    </form>
+    <div id="created"></div>
+  </section>
+  <section><h2>Usage, last 24 hours</h2><table id="usage"></table></section>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+let token = "";
+try { token = sessionStorage.getItem("sy_admin") || ""; } catch (_) {}
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const usd = (n) => n == null ? "—" : "$" + Number(n).toFixed(n < 1 ? 4 : 2);
+async function api(path, opts = {}) {
+  const r = await fetch(path, { ...opts, headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" } });
+  const body = await r.json();
+  if (!r.ok) throw new Error(body.error || r.statusText);
+  return body;
+}
+function table(el, head, rows) {
+  el.innerHTML = "<tr>" + head.map(([h, cls]) => `<th class="${cls || ""}">${h}</th>`).join("") + "</tr>" +
+    (rows.length ? rows.join("") : `<tr><td class="muted" colspan="${head.length}">nothing yet</td></tr>`);
+}
+async function refresh() {
+  if (!token) return;
+  try {
+    const [p, k, u] = await Promise.all([api("/admin/api/providers"), api("/admin/api/keys"), api("/admin/api/usage?since=24h")]);
+    table($("providers"), [["provider"], ["breaker"], ["calls in window", "num"], ["failure rate", "num"]],
+      p.providers.map((r) => `<tr><td>${esc(r.name)}</td><td><span class="pill ${esc(r.state)}">${esc(r.state)}</span></td>
+        <td class="num">${r.window_calls}</td><td class="num">${(r.window_failure_rate * 100).toFixed(0)}%</td></tr>`));
+    table($("keys"), [["key"], ["tenant"], ["name"], ["rpm", "num"], ["tpm", "num"], ["budget", "num"], ["spent this month", "num"], ["state"], [""]],
+      k.keys.map((r) => `<tr><td>${esc(r.id)}</td><td>${esc(r.tenant_id)}</td><td>${esc(r.name)}</td>
+        <td class="num">${r.rpm ?? "default"}</td><td class="num">${r.tpm ?? "default"}</td>
+        <td class="num">${usd(r.monthly_budget_usd)}</td><td class="num">${usd(r.spent_this_month_usd)}</td>
+        <td>${r.revoked_at ? '<span class="pill revoked">revoked</span>' : `<span class="pill ${esc(r.budget_state)}">${esc(r.budget_state || "ok")}</span>`}</td>
+        <td>${r.revoked_at ? "" : `<button data-revoke="${esc(r.id)}">revoke</button>`}</td></tr>`));
+    table($("usage"), [["tenant"], ["key"], ["alias"], ["provider"], ["model"], ["requests", "num"], ["errors", "num"], ["cache hits", "num"], ["tokens in", "num"], ["tokens out", "num"], ["cost", "num"]],
+      u.rows.map((r) => `<tr><td>${esc(r.tenant_id)}</td><td>${esc(r.key_id)}</td><td>${esc(r.alias)}</td><td>${esc(r.provider)}</td><td>${esc(r.model)}</td>
+        <td class="num">${r.requests}</td><td class="num">${r.errors}</td><td class="num">${r.cache_hits}</td>
+        <td class="num">${r.input_tokens}</td><td class="num">${r.output_tokens}</td><td class="num">${usd(r.cost_usd)}</td></tr>`));
+    $("err").textContent = "";
+    $("updated").textContent = "updated " + new Date().toLocaleTimeString();
+  } catch (e) { $("err").textContent = e.message; }
+}
+$("login").onsubmit = (e) => { e.preventDefault(); token = $("token").value; try { sessionStorage.setItem("sy_admin", token); } catch (_) {} refresh(); };
+$("keys").onclick = async (e) => {
+  const id = e.target.dataset.revoke;
+  if (id && confirm("Revoke key " + id + "?")) { await api(`/admin/api/keys/${encodeURIComponent(id)}/revoke`, { method: "POST" }).catch((x) => alert(x.message)); refresh(); }
+};
+$("newkey").onsubmit = async (e) => {
+  e.preventDefault();
+  const f = new FormData(e.target), body = {};
+  for (const [k, v] of f) if (v !== "") body[k] = ["rpm", "tpm"].includes(k) ? parseInt(v) : k === "monthly_budget_usd" ? parseFloat(v) : v;
+  try { const r = await api("/admin/api/keys", { method: "POST", body: JSON.stringify(body) }); $("created").textContent = "New key (shown once): " + r.key; e.target.reset(); refresh(); }
+  catch (x) { $("created").textContent = x.message; }
+};
+refresh();
+setInterval(refresh, 5000);
+</script>
+</body>
+</html>

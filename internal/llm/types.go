@@ -231,6 +231,40 @@ type Response struct {
 	Usage        Usage   `json:"usage"`
 }
 
+type responseAlias Response
+
+// MarshalJSON writes an unset stop_reason as null, as the API does in
+// message_start.
+func (r Response) MarshalJSON() ([]byte, error) {
+	var stop any
+	if r.StopReason != "" {
+		stop = r.StopReason
+	}
+	if r.Content == nil {
+		r.Content = []Block{}
+	}
+	return json.Marshal(struct {
+		responseAlias
+		StopReason any `json:"stop_reason"`
+	}{responseAlias(r), stop})
+}
+
+// UnmarshalJSON accepts a null stop_reason.
+func (r *Response) UnmarshalJSON(b []byte) error {
+	var w struct {
+		*responseAlias
+		StopReason *string `json:"stop_reason"`
+	}
+	w.responseAlias = (*responseAlias)(r)
+	if err := json.Unmarshal(b, &w); err != nil {
+		return err
+	}
+	if w.StopReason != nil {
+		r.StopReason = *w.StopReason
+	}
+	return nil
+}
+
 // Usage is what a provider reports. InputTokens excludes cache reads and writes,
 // as on the Anthropic API.
 type Usage struct {

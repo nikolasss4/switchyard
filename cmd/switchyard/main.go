@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -15,6 +16,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/redis/go-redis/v9"
 
+	"github.com/nikolasss4/switchyard/internal/admin"
 	"github.com/nikolasss4/switchyard/internal/auth"
 	"github.com/nikolasss4/switchyard/internal/budget"
 	"github.com/nikolasss4/switchyard/internal/cache"
@@ -119,11 +121,25 @@ func run(cfgPath string, log *slog.Logger) error {
 		Router: rt, Limiter: lim, Spend: spend, Prices: prices,
 		Usage: writer, Defaults: cfg.Limits, Log: log, Caches: caches, Observer: obs,
 	})
-	srv := server.New(gw, auth.NewAuthenticator(db, 30*time.Second), log)
+	authn := auth.NewAuthenticator(db, 30*time.Second)
+	srv := server.New(gw, authn, log)
+
+	if demo := os.Getenv("SWITCHYARD_DEMO_KEY"); demo != "" {
+		if err := db.SeedKey(ctx, "demo", "demo key", demo); err != nil {
+			return fmt.Errorf("seeding the demo key: %w", err)
+		}
+		log.Warn("seeded the demo key from SWITCHYARD_DEMO_KEY; do not do this in production")
+	}
 
 	httpSrv := &http.Server{Addr: cfg.Listen, Handler: srv.Handler(), ReadHeaderTimeout: 10 * time.Second}
 	opsMux := http.NewServeMux()
 	opsMux.Handle("GET /metrics", promhttp.HandlerFor(obs.M.Registry, promhttp.HandlerOpts{}))
+	opsMux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok\n")) })
+	adminToken := os.Getenv("SWITCHYARD_ADMIN_TOKEN")
+	if adminToken == "" {
+		log.Warn("SWITCHYARD_ADMIN_TOKEN not set: the admin API refuses every request")
+	}
+	(&admin.API{Token: adminToken, Store: db, Spend: spend, Breakers: rt.Breakers(), Auth: authn, Log: log}).Register(opsMux)
 	opsSrv := &http.Server{Addr: cfg.MetricsListen, Handler: opsMux, ReadHeaderTimeout: 10 * time.Second}
 	errc := make(chan error, 2)
 	go func() {
