@@ -39,6 +39,7 @@ func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /v1/chat/completions", s.chatCompletions)
 	mux.HandleFunc("POST /v1/embeddings", s.embeddings)
+	mux.HandleFunc("POST /v1/messages", s.messages)
 	mux.HandleFunc("GET /v1/models", s.models)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok\n")) })
 	return mux

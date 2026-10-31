@@ -78,10 +78,10 @@ type Retry struct {
 
 // Breaker configures the per-provider circuit breaker.
 type Breaker struct {
-	Window         int           `yaml:"window"`        // outcomes kept
-	MinRequests    int           `yaml:"min_requests"`  // before the rate is trusted
-	FailureRate    float64       `yaml:"failure_rate"`  // opens at or above this
-	OpenFor        time.Duration `yaml:"open_for"`      // before a half-open probe
+	Window         int           `yaml:"window"`       // outcomes kept
+	MinRequests    int           `yaml:"min_requests"` // before the rate is trusted
+	FailureRate    float64       `yaml:"failure_rate"` // opens at or above this
+	OpenFor        time.Duration `yaml:"open_for"`     // before a half-open probe
 	HalfOpenProbes int           `yaml:"half_open_probes"`
 }
 
