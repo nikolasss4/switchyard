@@ -13,15 +13,16 @@ import (
 
 // Config is the whole gateway configuration.
 type Config struct {
-	Listen    string     `yaml:"listen"`
-	Providers []Provider `yaml:"providers"`
-	Models    []Model    `yaml:"models"`
-	Rules     []Rule     `yaml:"rules"`
-	Retry     Retry      `yaml:"retry"`
-	Breaker   Breaker    `yaml:"breaker"`
-	Limits    Limits     `yaml:"limits"`
-	Pricing   string     `yaml:"pricing"`
-	Embedder  *Target    `yaml:"embedder"` // used by the semantic cache
+	Listen        string     `yaml:"listen"`
+	MetricsListen string     `yaml:"metrics_listen"` // /metrics and the admin API; keep it off the public network
+	Providers     []Provider `yaml:"providers"`
+	Models        []Model    `yaml:"models"`
+	Rules         []Rule     `yaml:"rules"`
+	Retry         Retry      `yaml:"retry"`
+	Breaker       Breaker    `yaml:"breaker"`
+	Limits        Limits     `yaml:"limits"`
+	Pricing       string     `yaml:"pricing"`
+	Embedder      *Target    `yaml:"embedder"` // used by the semantic cache
 }
 
 // Provider is one upstream.
@@ -113,6 +114,9 @@ func Parse(b []byte) (*Config, error) {
 func (c *Config) defaults() {
 	if c.Listen == "" {
 		c.Listen = ":8080"
+	}
+	if c.MetricsListen == "" {
+		c.MetricsListen = ":9091"
 	}
 	if c.Retry.MaxAttempts == 0 {
 		c.Retry.MaxAttempts = 2

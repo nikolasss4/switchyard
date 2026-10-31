@@ -49,6 +49,21 @@ type Deps struct {
 	Defaults config.Limits
 	Log      *slog.Logger
 	Caches   Caches
+	Observer Observer
+}
+
+// Observer is told when a call starts and finishes (metrics, traces, capture).
+type Observer interface {
+	Start(ctx context.Context, c *Call) context.Context
+	Finish(c *Call, o *Outcome, costUSD float64)
+}
+
+// Begin starts observing a call and returns the context to run it in.
+func (g *Gateway) Begin(ctx context.Context, c *Call) context.Context {
+	if g.Observer == nil {
+		return ctx
+	}
+	return g.Observer.Start(ctx, c)
 }
 
 // Gateway runs requests through admission, the router and accounting.
@@ -79,6 +94,7 @@ type Call struct {
 
 	Route    *router.Route
 	Budget   budget.State
+	Span     any // the observer's span, if any
 	reserved int // TPM tokens taken at admission
 }
 
@@ -101,7 +117,9 @@ type Outcome struct {
 	FallbackDepth int
 	Hedged        bool
 	Cache         string // "" | exact | semantic
+	CacheEligible bool   // the alias has a cache and the request could use it
 	Usage         llm.Usage
+	Response      *llm.Response // for content capture; nil for failed calls
 	Status        int
 	TTFT          time.Duration
 	Err           error
@@ -200,13 +218,13 @@ func EstimateInputTokens(r *llm.Request) int {
 func (g *Gateway) Complete(ctx context.Context, c *Call) (*llm.Response, *Outcome, error) {
 	hit, kind, p := g.lookup(ctx, c)
 	if hit != nil {
-		return hit, &Outcome{Status: http.StatusOK, Cache: kind, Usage: hit.Usage}, nil
+		return hit, &Outcome{Status: http.StatusOK, Cache: kind, CacheEligible: true, Usage: hit.Usage, Response: hit}, nil
 	}
 	resp, res, err := g.Router.Complete(ctx, c.Route, c.Req)
-	o := &Outcome{Status: http.StatusOK, Err: err}
+	o := &Outcome{Status: http.StatusOK, Err: err, CacheEligible: p != nil}
 	fillTarget(o, res)
 	if err == nil {
-		o.Usage = resp.Usage
+		o.Usage, o.Response = resp.Usage, resp
 		g.fill(p, resp)
 	}
 	return resp, o, err
@@ -217,17 +235,17 @@ func (g *Gateway) Complete(ctx context.Context, c *Call) (*llm.Response, *Outcom
 func (g *Gateway) Stream(ctx context.Context, c *Call) (provider.Stream, *Outcome, error) {
 	hit, kind, p := g.lookup(ctx, c)
 	if hit != nil {
-		o := &Outcome{Status: http.StatusOK, Cache: kind}
+		o := &Outcome{Status: http.StatusOK, Cache: kind, CacheEligible: true, Response: hit}
 		return &metered{Stream: cache.NewReplay(hit), g: g, c: c, o: o}, o, nil
 	}
 	s, res, err := g.Router.Stream(ctx, c.Route, c.Req)
-	o := &Outcome{Status: http.StatusOK, Err: err}
+	o := &Outcome{Status: http.StatusOK, Err: err, CacheEligible: p != nil}
 	fillTarget(o, res)
 	if err != nil {
 		return nil, o, err
 	}
 	m := &metered{Stream: s, g: g, c: c, o: o}
-	if p != nil {
+	if p != nil || (c.Key != nil && c.Key.CapturePrompts) {
 		m.asm, m.pending = cache.NewAssembler(), p
 	}
 	return m, o, nil
@@ -296,6 +314,9 @@ func (g *Gateway) Finish(c *Call, o *Outcome) {
 		rec.TTFTMS = &ms
 	}
 	g.Usage.Record(rec)
+	if g.Observer != nil {
+		g.Observer.Finish(c, o, cost)
+	}
 
 	// Prompts and completions are never logged here.
 	attrs := []any{"request_id", c.ID, "tenant", rec.TenantID, "key", rec.KeyID, "surface", c.Surface, "alias", rec.Alias,
@@ -385,6 +406,7 @@ func (m *metered) Next() (*llm.Event, error) {
 		m.gotStop = true
 		if m.asm != nil {
 			if resp, ok := m.asm.Response(); ok {
+				m.o.Response = resp
 				m.g.fill(m.pending, resp)
 			}
 		}

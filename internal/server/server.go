@@ -194,14 +194,15 @@ func (s *Server) setHeaders(w http.ResponseWriter, c *gateway.Call, o *gateway.O
 func (s *Server) serve(w http.ResponseWriter, r *http.Request, sf surface, key *auth.Key, req *llm.Request,
 	writeResp func(*llm.Response), relay func(provider.Stream)) {
 	c := s.gw.NewCall(sf.name(), key, req, r.Header)
-	if err := s.gw.Admit(r.Context(), c); err != nil {
+	ctx := s.gw.Begin(r.Context(), c)
+	if err := s.gw.Admit(ctx, c); err != nil {
 		s.setHeaders(w, c, nil)
 		sf.writeError(w, err)
 		s.gw.Finish(c, &gateway.Outcome{Err: err, Status: gateway.StatusOf(err)})
 		return
 	}
 	if !req.Stream {
-		resp, o, err := s.gw.Complete(r.Context(), c)
+		resp, o, err := s.gw.Complete(ctx, c)
 		s.setHeaders(w, c, o)
 		if err != nil {
 			sf.writeError(w, err)
@@ -211,7 +212,7 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request, sf surface, key *
 		s.gw.Finish(c, o)
 		return
 	}
-	stream, o, err := s.gw.Stream(r.Context(), c)
+	stream, o, err := s.gw.Stream(ctx, c)
 	s.setHeaders(w, c, o)
 	if err != nil {
 		sf.writeError(w, err)
@@ -260,13 +261,14 @@ func (s *Server) embeddings(w http.ResponseWriter, r *http.Request, key *auth.Ke
 	}
 	text := strings.Join(in.Input, " ")
 	req := &llm.Request{Model: in.Model, Messages: []llm.Message{{Role: "user", Content: []llm.Block{{Type: "text", Text: text}}}}}
-	c := s.gw.NewCall("openai", key, req, r.Header)
-	if err := s.gw.Admit(r.Context(), c); err != nil {
+	c := s.gw.NewCall("embeddings", key, req, r.Header)
+	ctx := s.gw.Begin(r.Context(), c)
+	if err := s.gw.Admit(ctx, c); err != nil {
 		sf.writeError(w, err)
 		s.gw.Finish(c, &gateway.Outcome{Err: err})
 		return
 	}
-	resp, o, err := s.gw.Embed(r.Context(), c, &in)
+	resp, o, err := s.gw.Embed(ctx, c, &in)
 	s.setHeaders(w, c, o)
 	if err != nil {
 		sf.writeError(w, err)

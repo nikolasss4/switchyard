@@ -55,6 +55,9 @@ type Router struct {
 	retry     config.Retry
 	breakers  map[string]*breaker.Breaker
 	rnd       func() float64
+
+	// OnAttempt, if set, wraps every upstream attempt (tracing, metrics).
+	OnAttempt func(ctx context.Context, t Target) (context.Context, func(error))
 }
 
 // New returns a router over the configured aliases and rules, with one
@@ -191,7 +194,12 @@ func lane[T any](ctx context.Context, r *Router, route *Route, depth int, req *l
 			return zero, nil, lastErr
 		}
 		attempts.Add(1)
-		v, cancel, err := attempt(ctx, route, t, req, call)
+		actx, end := ctx, func(error) {}
+		if r.OnAttempt != nil {
+			actx, end = r.OnAttempt(ctx, t)
+		}
+		v, cancel, err := attempt(actx, route, t, req, call)
+		end(err)
 		if br != nil && ctx.Err() == nil {
 			br.Record(provider.CountsAsFailure(err))
 		}

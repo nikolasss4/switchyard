@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/redis/go-redis/v9"
 
 	"github.com/nikolasss4/switchyard/internal/auth"
@@ -25,8 +26,12 @@ import (
 	"github.com/nikolasss4/switchyard/internal/router"
 	"github.com/nikolasss4/switchyard/internal/server"
 	"github.com/nikolasss4/switchyard/internal/store"
+	"github.com/nikolasss4/switchyard/internal/telemetry"
 	"github.com/nikolasss4/switchyard/internal/usage"
 )
+
+// version is set at build time with -ldflags "-X main.version=...".
+var version = "dev"
 
 func main() {
 	cfgPath := flag.String("config", envOr("SWITCHYARD_CONFIG", "switchyard.yaml"), "config file")
@@ -81,10 +86,20 @@ func run(cfgPath string, log *slog.Logger) error {
 		lim, spend, exact = limiter.NewMemory(), budget.NewMemory(), cache.NewMemoryExact()
 	}
 
+	tracer, stopTracing, err := telemetry.SetupTracing(ctx, version)
+	if err != nil {
+		return err
+	}
+	defer stopTracing(context.Background()) //nolint:errcheck
+	obs := &telemetry.Observer{M: telemetry.NewMetrics(), Tracer: tracer, Capture: log.With("stream", "capture")}
+
 	writer := usage.NewWriter(db.InsertUsage, log, 50_000, 500, time.Second)
+	writer.OnDrop = obs.M.UsageDropped.Inc
 	defer writer.Close()
 
-	providers := provider.FromConfig(cfg, provider.NewHTTPClient())
+	client := provider.NewHTTPClient()
+	client.Transport = telemetry.Transport{Base: client.Transport}
+	providers := provider.FromConfig(cfg, client)
 	caches := gateway.Caches{Exact: exact}
 	if semanticEnabled(cfg) {
 		if cfg.Embedder == nil {
@@ -97,18 +112,25 @@ func run(cfgPath string, log *slog.Logger) error {
 		caches.Vectors = vec
 		caches.Embedder = &router.Target{Provider: providers[cfg.Embedder.Provider], Model: cfg.Embedder.Model}
 	}
+	rt := router.New(cfg, providers)
+	rt.OnAttempt = obs.Attempt
+	obs.WatchBreakers(rt.Breakers())
 	gw := gateway.New(gateway.Deps{
-		Router: router.New(cfg, providers), Limiter: lim, Spend: spend, Prices: prices,
-		Usage: writer, Defaults: cfg.Limits, Log: log, Caches: caches,
+		Router: rt, Limiter: lim, Spend: spend, Prices: prices,
+		Usage: writer, Defaults: cfg.Limits, Log: log, Caches: caches, Observer: obs,
 	})
 	srv := server.New(gw, auth.NewAuthenticator(db, 30*time.Second), log)
 
 	httpSrv := &http.Server{Addr: cfg.Listen, Handler: srv.Handler(), ReadHeaderTimeout: 10 * time.Second}
-	errc := make(chan error, 1)
+	opsMux := http.NewServeMux()
+	opsMux.Handle("GET /metrics", promhttp.HandlerFor(obs.M.Registry, promhttp.HandlerOpts{}))
+	opsSrv := &http.Server{Addr: cfg.MetricsListen, Handler: opsMux, ReadHeaderTimeout: 10 * time.Second}
+	errc := make(chan error, 2)
 	go func() {
-		log.Info("listening", "addr", cfg.Listen, "price_version", prices.Version)
+		log.Info("listening", "addr", cfg.Listen, "metrics", cfg.MetricsListen, "price_version", prices.Version, "version", version)
 		errc <- httpSrv.ListenAndServe()
 	}()
+	go func() { errc <- opsSrv.ListenAndServe() }()
 	select {
 	case err := <-errc:
 		if !errors.Is(err, http.ErrServerClosed) {
@@ -118,6 +140,7 @@ func run(cfgPath string, log *slog.Logger) error {
 	}
 	shutdown, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+	_ = opsSrv.Shutdown(shutdown)
 	return httpSrv.Shutdown(shutdown)
 }
 
