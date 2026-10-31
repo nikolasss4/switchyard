@@ -1,0 +1,24 @@
+# Benchmark config: every upstream is the mock provider, so the numbers
+# measure the gateway, not a model. See bench/README.md.
+listen: ":8080"
+metrics_listen: ":9091"
+pricing: pricing/prices.yaml
+
+providers:
+  - {name: mock-a, type: openai, base_url: "http://127.0.0.1:9101/v1"}
+  - {name: mock-a-anth, type: anthropic, base_url: "http://127.0.0.1:9101"}
+  - {name: mock-b, type: openai, base_url: "http://127.0.0.1:9102/v1"}
+
+models:
+  - alias: bench-oai
+    targets: [{provider: mock-a, model: mock-fast}]
+  - alias: bench-anth
+    targets: [{provider: mock-a-anth, model: mock-fast}]
+  - alias: chaos
+    timeout: 5s
+    targets:
+      - {provider: mock-a, model: mock-fast}
+      - {provider: mock-b, model: mock-fast}
+
+retry: {max_attempts: 2, base_delay: 25ms, max_delay: 250ms}
+breaker: {window: 20, min_requests: 10, failure_rate: 0.5, open_for: 5s, half_open_probes: 3}
