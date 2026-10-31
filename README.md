@@ -89,7 +89,7 @@ No threshold is safe for general traffic. "Exchange rate from USD to EUR" vs "fr
 ## Architecture
 
 ```mermaid
-flowchart LR
+flowchart TD
   C1[OpenAI SDK] -->|/v1/chat/completions| S
   C2[Anthropic SDK] -->|/v1/messages| S
   subgraph GW[switchyard]
