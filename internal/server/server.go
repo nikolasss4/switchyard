@@ -125,6 +125,9 @@ func toAPIError(err error) *apiError {
 	if errors.Is(err, translate.ErrInvalid) {
 		return badRequest(err.Error())
 	}
+	if errors.Is(err, router.ErrCircuitOpen) {
+		return &apiError{Status: http.StatusServiceUnavailable, Type: "overloaded_error", Message: "no healthy upstream for this model", RetryAfter: time.Second}
+	}
 	if errors.Is(err, router.ErrUnknownModel) {
 		return &apiError{Status: http.StatusNotFound, Type: "not_found_error", Message: err.Error()}
 	}
@@ -176,6 +179,9 @@ func (s *Server) setHeaders(w http.ResponseWriter, c *gateway.Call, o *gateway.O
 		h.Set("X-Switchyard-Fallback-Depth", itoa(o.FallbackDepth))
 		if o.Cache != "" {
 			h.Set("X-Switchyard-Cache", o.Cache)
+		}
+		if o.Hedged {
+			h.Set("X-Switchyard-Hedged", "true")
 		}
 	}
 	if c.Budget == budget.Soft {

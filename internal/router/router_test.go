@@ -26,6 +26,7 @@ func setup(t *testing.T, yaml string, fakes ...*fake) *Router {
 }
 
 const chain = `
+retry: {max_attempts: 1}
 providers:
   - {name: a, type: openai, base_url: http://a}
   - {name: b, type: openai, base_url: http://b}

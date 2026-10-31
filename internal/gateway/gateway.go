@@ -97,6 +97,7 @@ type Outcome struct {
 	Model         string
 	Attempts      int
 	FallbackDepth int
+	Hedged        bool
 	Cache         string // "" | exact | semantic
 	Usage         llm.Usage
 	Status        int
@@ -223,7 +224,7 @@ func fillTarget(o *Outcome, res *router.Result) {
 	if t := res.Target; t != nil && t.Provider != nil {
 		o.Provider, o.Model = t.Provider.Name(), t.Model
 	}
-	o.Attempts, o.FallbackDepth = res.Attempts, res.FallbackDepth
+	o.Attempts, o.FallbackDepth, o.Hedged = res.Attempts, res.FallbackDepth, res.Hedged
 }
 
 // Finish settles accounting for a call. It is safe to call once per call.
