@@ -52,6 +52,7 @@ type Router struct {
 	providers map[string]provider.Provider
 	models    map[string]*config.Model
 	rules     []config.Rule
+	direct    bool
 	retry     config.Retry
 	breakers  map[string]*breaker.Breaker
 	rnd       func() float64
@@ -63,7 +64,7 @@ type Router struct {
 // New returns a router over the configured aliases and rules, with one
 // circuit breaker per provider.
 func New(cfg *config.Config, providers map[string]provider.Provider) *Router {
-	r := &Router{providers: providers, models: map[string]*config.Model{}, rules: cfg.Rules,
+	r := &Router{providers: providers, models: map[string]*config.Model{}, rules: cfg.Rules, direct: cfg.AllowDirect,
 		retry: cfg.Retry, breakers: map[string]*breaker.Breaker{}, rnd: rand.Float64}
 	if r.retry.MaxAttempts < 1 {
 		r.retry.MaxAttempts = 1
@@ -84,8 +85,8 @@ func (r *Router) Breakers() map[string]*breaker.Breaker { return r.breakers }
 
 // Resolve maps a requested model to a route. Rules are applied first, in
 // order; the first rule whose conditions all hold replaces the model. The
-// result is an alias from the config, or "provider/model" to address one
-// upstream model directly.
+// result is an alias from the config, or, when allow_direct is set,
+// "provider/model" to address one upstream model directly.
 func (r *Router) Resolve(model, tenant string, h http.Header) (*Route, error) {
 	for _, rule := range r.rules {
 		if rule.Matches(model, tenant, h) {
@@ -100,7 +101,7 @@ func (r *Router) Resolve(model, tenant string, h http.Header) (*Route, error) {
 		}
 		return route, nil
 	}
-	if name, upstream, ok := strings.Cut(model, "/"); ok {
+	if name, upstream, ok := strings.Cut(model, "/"); ok && r.direct {
 		if p, found := r.providers[name]; found && upstream != "" {
 			return &Route{Alias: model, Targets: []Target{{Provider: p, Model: upstream}}, Model: &config.Model{Alias: model, Timeout: 120e9}}, nil
 		}

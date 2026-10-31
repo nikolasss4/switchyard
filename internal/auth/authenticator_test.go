@@ -3,6 +3,8 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 )
@@ -48,5 +50,15 @@ func TestAuthenticatorCachesAndRejects(t *testing.T) {
 	now = now.Add(2 * time.Minute) // past the TTL
 	if _, err := a.Authenticate(context.Background(), g.Plaintext); !errors.Is(err, ErrUnauthorized) {
 		t.Fatalf("revoked key: %v", err)
+	}
+}
+
+func TestAuthenticatorCacheIsBounded(t *testing.T) {
+	a := NewAuthenticator(&fakeLookup{keys: map[string]*Key{}}, time.Minute)
+	for i := range maxCached + 10 {
+		_, _ = a.Authenticate(context.Background(), "sy_"+fmt.Sprintf("%08d", i)+"_"+strings.Repeat("a", 32))
+	}
+	if n := len(a.cache); n > maxCached {
+		t.Fatalf("cache grew to %d entries", n)
 	}
 }

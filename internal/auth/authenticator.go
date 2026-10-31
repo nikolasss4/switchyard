@@ -50,6 +50,9 @@ type Authenticator struct {
 	cache map[string]cached
 }
 
+// maxCached bounds the lookup cache.
+const maxCached = 100_000
+
 type cached struct {
 	key     *Key // nil = known missing
 	expires time.Time
@@ -92,6 +95,11 @@ func (a *Authenticator) get(ctx context.Context, id string) (*Key, error) {
 		return nil, err
 	}
 	a.mu.Lock()
+	// Misses are cached too, so a flood of made-up key ids does not reach
+	// Postgres each time; the cap keeps that flood from growing the map.
+	if len(a.cache) >= maxCached {
+		clear(a.cache)
+	}
 	a.cache[id] = cached{key: key, expires: now.Add(a.ttl)}
 	a.mu.Unlock()
 	return key, nil

@@ -27,6 +27,7 @@ func setup(t *testing.T, yaml string, fakes ...*fake) *Router {
 
 const chain = `
 retry: {max_attempts: 1}
+allow_direct: true
 providers:
   - {name: a, type: openai, base_url: http://a}
   - {name: b, type: openai, base_url: http://b}
@@ -74,6 +75,10 @@ func TestResolveRules(t *testing.T) {
 	}
 	if _, err := r.Resolve("zz/model", "", nil); !errors.Is(err, ErrUnknownModel) {
 		t.Fatal("unknown provider prefix must not resolve")
+	}
+	r.direct = false
+	if _, err := r.Resolve("b/some-model", "", nil); !errors.Is(err, ErrUnknownModel) {
+		t.Fatal("provider/model must not resolve unless allow_direct is set")
 	}
 }
 

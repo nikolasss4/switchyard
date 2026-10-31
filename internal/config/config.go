@@ -23,6 +23,9 @@ type Config struct {
 	Limits        Limits     `yaml:"limits"`
 	Pricing       string     `yaml:"pricing"`
 	Embedder      *Target    `yaml:"embedder"` // used by the semantic cache
+	// AllowDirect lets clients name "provider/model" instead of an alias.
+	// Off by default: it bypasses the aliases an operator chose to expose.
+	AllowDirect bool `yaml:"allow_direct"`
 }
 
 // Provider is one upstream.

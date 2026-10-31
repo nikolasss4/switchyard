@@ -228,7 +228,7 @@ breaker: {window: 20, min_requests: 10, failure_rate: 0.5, open_for: 10s, half_o
 limits: {rpm: 600, tpm: 400000}       # defaults for keys without their own
 ```
 
-Models can also be addressed directly as `provider/model`, for example `anthropic/claude-opus-5-5`. Prices live in [`pricing/prices.yaml`](pricing/prices.yaml), versioned, and every usage row records the version it was priced with.
+With `allow_direct: true`, clients can also name a model directly as `provider/model`, for example `anthropic/claude-opus-5-5`. It's off by default because it bypasses the aliases you chose to expose; per-key `allowed_models` still applies. Prices live in [`pricing/prices.yaml`](pricing/prices.yaml), versioned, and every usage row records the version it was priced with.
 
 ## Reproduce the results
 
