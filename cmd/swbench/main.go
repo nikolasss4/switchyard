@@ -41,7 +41,7 @@ func main() {
 		which = []string{"overhead", "throughput", "stream", "chaos"}
 	}
 	e.client = newClient(4096)
-	writeOut := !(len(which) == 1 && which[0] == "traffic")
+	writeOut := len(which) != 1 || which[0] != "traffic"
 	if writeOut {
 		if err := os.MkdirAll(e.out, 0o755); err != nil {
 			log.Fatal(err)

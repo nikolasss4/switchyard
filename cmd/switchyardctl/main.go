@@ -89,7 +89,7 @@ var errUsage = errors.New("usage")
 func run(args []string) error {
 	if len(args) == 1 && args[0] == "--healthcheck" {
 		// For container health checks (the image has no curl).
-		resp, err := (&http.Client{Timeout: 2 * time.Second}).Get("http://127.0.0.1:8080/healthz")
+		resp, err := (&http.Client{Timeout: 2 * time.Second}).Get("http://127.0.0.1:8080/healthz") //nolint:noctx // has a timeout
 		if err != nil {
 			return err
 		}

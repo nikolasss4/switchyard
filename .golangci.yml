@@ -29,6 +29,9 @@ linters:
     rules:
       - path: _test\.go
         linters: [gosec, noctx, bodyclose, errcheck]
+      # Benchmark and eval harnesses: short-lived tools run by hand, not served.
+      - path: cmd/(swbench|semeval)/
+        linters: [gosec, noctx, errcheck]
       # The mock provider's randomness only shapes fake latency and errors.
       - path: internal/mock/
         text: G404
