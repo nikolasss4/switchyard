@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "switchyard.name" . }}
+  labels: {{- include "switchyard.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels: {{- include "switchyard.selector" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "switchyard.selector" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- if .Values.metrics.annotations }}
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9091"
+        {{- end }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: {type: RuntimeDefault}
+      terminationGracePeriodSeconds: 45 # streams get time to finish on shutdown
+      containers:
+        - name: gateway
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["-config", "/etc/switchyard/switchyard.yaml"]
+          envFrom:
+            - secretRef: {name: {{ .Values.existingSecret }}}
+          ports:
+            - {name: http, containerPort: 8080}
+            - {name: metrics, containerPort: 9091}
+          readinessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: /healthz, port: metrics}
+            periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - {name: config, mountPath: /etc/switchyard, readOnly: true}
+      volumes:
+        - name: config
+          configMap: {name: {{ include "switchyard.name" . }}}

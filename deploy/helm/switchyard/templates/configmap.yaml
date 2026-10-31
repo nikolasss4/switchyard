@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "switchyard.name" . }}
+  labels: {{- include "switchyard.labels" . | nindent 4 }}
+data:
+  switchyard.yaml: |
+{{ toYaml .Values.config | indent 4 }}
+  prices.yaml: |
+{{- if .Values.prices }}
+{{ .Values.prices | indent 4 }}
+{{- else }}
+{{ .Files.Get "prices.yaml" | indent 4 }}
+{{- end }}

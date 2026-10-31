@@ -66,6 +66,37 @@ jobs:
       - if: failure()
         run: tail -n 100 gateway.log
 
+  helm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - run: helm lint deploy/helm/switchyard && helm template t deploy/helm/switchyard > /dev/null
+      - name: the chart's price table matches pricing/prices.yaml
+        run: diff pricing/prices.yaml deploy/helm/switchyard/prices.yaml
+
+  compose:
+    # Brings up the documented demo and runs the SDK suite against it.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: docker compose up -d --build --wait
+      - name: SDK conformance against the compose stack
+        working-directory: tests/conformance
+        env: {SWITCHYARD_ADMIN_TOKEN: demo-admin-token}
+        run: uv run pytest -v
+      - name: demo traffic and a dashboard screenshot
+        run: |
+          docker compose --profile traffic up -d traffic
+          sleep 150
+          uv run --no-project --with playwright playwright install --with-deps chromium > /dev/null
+          uv run --no-project --with playwright bench/screenshot.py grafana.png
+      - uses: actions/upload-artifact@v4
+        with: {name: grafana-screenshot, path: grafana.png}
+      - if: failure()
+        run: docker compose logs --tail 100 gateway
+
   docker:
     runs-on: ubuntu-latest
     steps:

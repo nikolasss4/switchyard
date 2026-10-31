@@ -1,0 +1,85 @@
+# docker compose up --build: the gateway, Postgres (pgvector), Redis, two mock
+# providers, Prometheus and Grafana, with a seeded demo key. Add
+# `--profile traffic` to send a steady mix of demo requests.
+name: switchyard
+
+x-demo-env: &demo-env
+  SWITCHYARD_ADMIN_TOKEN: demo-admin-token
+  SWITCHYARD_DEMO_KEY: sy_demo0000_demodemodemodemodemodemodemodemo
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_PASSWORD: switchyard
+      POSTGRES_DB: switchyard
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d switchyard"]
+      interval: 2s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      retries: 30
+
+  # Two fake providers that answer like real ones: ~150 ms to the first token,
+  # then 60 tokens/s.
+  mock-a:
+    build: .
+    entrypoint: ["/usr/local/bin/mockllm", "-addr", ":9000", "-name", "mock-a", "-latency-ms", "150", "-jitter-ms", "100", "-tokens-per-second", "60"]
+  mock-b:
+    build: .
+    entrypoint: ["/usr/local/bin/mockllm", "-addr", ":9000", "-name", "mock-b", "-latency-ms", "250", "-jitter-ms", "150", "-tokens-per-second", "40"]
+
+  gateway:
+    build: .
+    environment:
+      <<: *demo-env
+      DATABASE_URL: postgres://postgres:switchyard@postgres:5432/switchyard?sslmode=disable
+      REDIS_URL: redis://redis:6379/0
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+    ports:
+      - "8080:8080"
+      - "127.0.0.1:9091:9091" # metrics and the admin API: local only
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      mock-a: {condition: service_started}
+      mock-b: {condition: service_started}
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/switchyardctl", "--healthcheck"]
+      interval: 2s
+      retries: 30
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    volumes: [./deploy/prometheus.yml:/etc/prometheus/prometheus.yml:ro]
+    ports: ["127.0.0.1:9090:9090"]
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/switchyard.json
+    volumes:
+      - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports: ["127.0.0.1:3000:3000"]
+
+  traffic:
+    build: .
+    profiles: [traffic]
+    entrypoint: ["/usr/local/bin/swbench", "-gateway", "http://gateway:8080", "-admin", "http://gateway:9091", "traffic"]
+    environment: {<<: *demo-env}
+    depends_on:
+      gateway: {condition: service_healthy}
+
+volumes:
+  pgdata:

@@ -87,6 +87,18 @@ Add --json before the command for raw JSON output.`
 var errUsage = errors.New("usage")
 
 func run(args []string) error {
+	if len(args) == 1 && args[0] == "--healthcheck" {
+		// For container health checks (the image has no curl).
+		resp, err := (&http.Client{Timeout: 2 * time.Second}).Get("http://127.0.0.1:8080/healthz")
+		if err != nil {
+			return err
+		}
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			return errors.New(resp.Status)
+		}
+		return nil
+	}
 	asJSON := false
 	if len(args) > 0 && args[0] == "--json" {
 		asJSON, args = true, args[1:]

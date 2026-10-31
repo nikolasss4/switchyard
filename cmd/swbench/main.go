@@ -41,13 +41,21 @@ func main() {
 		which = []string{"overhead", "throughput", "stream", "chaos"}
 	}
 	e.client = newClient(4096)
-	if err := os.MkdirAll(e.out, 0o755); err != nil {
-		log.Fatal(err)
+	writeOut := !(len(which) == 1 && which[0] == "traffic")
+	if writeOut {
+		if err := os.MkdirAll(e.out, 0o755); err != nil {
+			log.Fatal(err)
+		}
+	}
+	if e.adminToken == "" {
+		log.Fatal("set SWITCHYARD_ADMIN_TOKEN or -admin-token")
 	}
 	if err := e.setup(); err != nil {
 		log.Fatal("setup: ", err)
 	}
-	writeJSON(filepath.Join(e.out, "environment.json"), environment())
+	if writeOut {
+		writeJSON(filepath.Join(e.out, "environment.json"), environment())
+	}
 	for _, w := range which {
 		start := time.Now()
 		log.Printf("== %s", w)
@@ -62,6 +70,8 @@ func main() {
 			res, err = e.stream()
 		case "chaos":
 			res, err = e.chaos()
+		case "traffic":
+			res, err = e.traffic()
 		default:
 			log.Fatalf("unknown benchmark %q", w)
 		}

@@ -1,0 +1,46 @@
+image:
+  repository: ghcr.io/nikolasss4/switchyard
+  tag: ""          # defaults to the chart appVersion
+  pullPolicy: IfNotPresent
+
+replicaCount: 2    # instances share rate limits, budgets and the cache through Redis
+
+# Secret holding DATABASE_URL, REDIS_URL, SWITCHYARD_ADMIN_TOKEN and provider
+# API keys (e.g. ANTHROPIC_API_KEY). Create it yourself; the chart never does.
+existingSecret: switchyard
+
+# The gateway config (configs/demo.yaml is a full example). Provider API keys
+# are named by environment variable, never written here.
+config:
+  listen: ":8080"
+  metrics_listen: ":9091"
+  pricing: /etc/switchyard/prices.yaml
+  providers:
+    - {name: anthropic, type: anthropic, base_url: "https://api.anthropic.com", api_key_env: ANTHROPIC_API_KEY}
+  models:
+    - alias: fast
+      targets: [{provider: anthropic, model: claude-haiku-5-5}]
+    - alias: smart
+      targets: [{provider: anthropic, model: claude-sonnet-5-5}, {provider: anthropic, model: claude-haiku-5-5}]
+  limits: {rpm: 600, tpm: 400000}
+
+# Overrides pricing/prices.yaml when set.
+prices: ""
+
+resources:
+  requests: {cpu: 250m, memory: 128Mi}
+  limits: {memory: 512Mi}
+
+service:
+  type: ClusterIP
+  port: 8080
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+# Adds prometheus.io scrape annotations for the metrics port.
+metrics:
+  annotations: true
