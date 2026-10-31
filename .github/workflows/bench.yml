@@ -42,7 +42,7 @@ jobs:
           sudo sysctl -w net.ipv4.tcp_tw_reuse=1
       - name: run
         run: |
-          ulimit -n 200000
+          ulimit -n "$(ulimit -Hn)"; ulimit -n
           ./bin/mockllm -addr 127.0.0.1:9101 -name mock-a > mock-a.log 2>&1 &
           ./bin/mockllm -addr 127.0.0.1:9102 -name mock-b > mock-b.log 2>&1 &
           ./bin/switchyard -config configs/bench.yaml > gateway.log 2>&1 &
