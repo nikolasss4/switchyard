@@ -3,19 +3,24 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
 	"log/slog"
 	"net/http"
 	"sort"
+	"strconv"
+	"strings"
 	"time"
 
+	"github.com/nikolasss4/switchyard/internal/auth"
+	"github.com/nikolasss4/switchyard/internal/budget"
+	"github.com/nikolasss4/switchyard/internal/gateway"
 	"github.com/nikolasss4/switchyard/internal/llm"
 	"github.com/nikolasss4/switchyard/internal/oai"
 	"github.com/nikolasss4/switchyard/internal/provider"
 	"github.com/nikolasss4/switchyard/internal/router"
-	"github.com/nikolasss4/switchyard/internal/sse"
 	"github.com/nikolasss4/switchyard/internal/translate"
 )
 
@@ -24,28 +29,75 @@ const maxBody = 32 << 20
 
 // Server holds the HTTP handlers.
 type Server struct {
-	router *router.Router
-	log    *slog.Logger
-	now    func() time.Time
+	gw   *gateway.Gateway
+	auth *auth.Authenticator
+	log  *slog.Logger
+	now  func() time.Time
 }
 
 // New returns a server.
-func New(r *router.Router, log *slog.Logger) *Server {
-	return &Server{router: r, log: log, now: time.Now}
+func New(gw *gateway.Gateway, a *auth.Authenticator, log *slog.Logger) *Server {
+	return &Server{gw: gw, auth: a, log: log, now: time.Now}
 }
 
 // Handler returns the HTTP handler.
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /v1/chat/completions", s.chatCompletions)
-	mux.HandleFunc("POST /v1/embeddings", s.embeddings)
-	mux.HandleFunc("POST /v1/messages", s.messages)
-	mux.HandleFunc("GET /v1/models", s.models)
+	mux.HandleFunc("POST /v1/chat/completions", s.authed(openAISurface{}, s.chatCompletions))
+	mux.HandleFunc("POST /v1/embeddings", s.authed(openAISurface{}, s.embeddings))
+	mux.HandleFunc("POST /v1/messages", s.authed(anthropicSurface{}, s.messages))
+	mux.HandleFunc("GET /v1/models", s.authed(openAISurface{}, s.models))
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok\n")) })
 	return mux
 }
 
-// apiError is a gateway error with the status to return.
+// surface writes responses in one API's format.
+type surface interface {
+	name() string
+	writeError(w http.ResponseWriter, err error)
+}
+
+type openAISurface struct{}
+
+func (openAISurface) name() string { return "openai" }
+func (openAISurface) writeError(w http.ResponseWriter, err error) {
+	ae := toAPIError(err)
+	writeRetryAfter(w, ae.RetryAfter)
+	writeJSON(w, ae.Status, oai.ErrorResponse{Error: oai.ErrorBody{Message: ae.Message, Type: ae.Type}})
+}
+
+type anthropicSurface struct{}
+
+func (anthropicSurface) name() string { return "anthropic" }
+func (anthropicSurface) writeError(w http.ResponseWriter, err error) {
+	ae := toAPIError(err)
+	writeRetryAfter(w, ae.RetryAfter)
+	writeJSON(w, ae.Status, map[string]any{"type": "error", "error": llm.APIError{Type: ae.Type, Message: ae.Message}})
+}
+
+// authed resolves the API key from "Authorization: Bearer" (OpenAI SDKs) or
+// "x-api-key" (Anthropic SDKs).
+func (s *Server) authed(sf surface, h func(http.ResponseWriter, *http.Request, *auth.Key)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		token := r.Header.Get("x-api-key")
+		if bearer, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer "); ok {
+			token = strings.TrimSpace(bearer)
+		}
+		key, err := s.auth.Authenticate(r.Context(), token)
+		if err != nil {
+			if !errors.Is(err, auth.ErrUnauthorized) {
+				s.log.Error("key lookup failed", "err", err)
+				sf.writeError(w, &apiError{Status: http.StatusServiceUnavailable, Type: "api_error", Message: "key lookup unavailable"})
+				return
+			}
+			sf.writeError(w, &apiError{Status: http.StatusUnauthorized, Type: "authentication_error", Message: "invalid API key"})
+			return
+		}
+		h(w, r, key)
+	}
+}
+
+// apiError is an error with the status to return.
 type apiError struct {
 	Status     int
 	Type       string
@@ -66,6 +118,10 @@ func toAPIError(err error) *apiError {
 	if errors.As(err, &ae) {
 		return ae
 	}
+	var ge *gateway.Error
+	if errors.As(err, &ge) {
+		return &apiError{Status: ge.Status, Type: ge.Type, Message: ge.Message, RetryAfter: ge.RetryAfter}
+	}
 	if errors.Is(err, translate.ErrInvalid) {
 		return badRequest(err.Error())
 	}
@@ -79,6 +135,9 @@ func toAPIError(err error) *apiError {
 		}
 		return &apiError{Status: http.StatusBadGateway, Type: "api_error", Message: "upstream error: " + pe.Error(), RetryAfter: pe.RetryAfter}
 	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return &apiError{Status: http.StatusGatewayTimeout, Type: "api_error", Message: "upstream timeout"}
+	}
 	return &apiError{Status: http.StatusInternalServerError, Type: "api_error", Message: "internal error"}
 }
 
@@ -90,24 +149,11 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 
 func writeRetryAfter(w http.ResponseWriter, d time.Duration) {
 	if d > 0 {
-		secs := int(d.Seconds() + 0.999)
-		w.Header().Set("Retry-After", itoa(secs))
+		w.Header().Set("Retry-After", strconv.Itoa(int((d+time.Second-1)/time.Second)))
 	}
 }
 
-func itoa(n int) string { b, _ := json.Marshal(n); return string(b) }
-
-func (s *Server) openAIError(w http.ResponseWriter, err error) {
-	ae := toAPIError(err)
-	writeRetryAfter(w, ae.RetryAfter)
-	writeJSON(w, ae.Status, oai.ErrorResponse{Error: oai.ErrorBody{Message: ae.Message, Type: ae.Type}})
-}
-
-func (s *Server) anthropicError(w http.ResponseWriter, err error) {
-	ae := toAPIError(err)
-	writeRetryAfter(w, ae.RetryAfter)
-	writeJSON(w, ae.Status, map[string]any{"type": "error", "error": llm.APIError{Type: ae.Type, Message: ae.Message}})
-}
+func itoa(n int) string { return strconv.Itoa(n) }
 
 func readBody(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 	b, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxBody))
@@ -117,110 +163,122 @@ func readBody(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 	return b, nil
 }
 
-func (s *Server) chatCompletions(w http.ResponseWriter, r *http.Request) {
+// setHeaders reports routing decisions to the client.
+func (s *Server) setHeaders(w http.ResponseWriter, c *gateway.Call, o *gateway.Outcome) {
+	h := w.Header()
+	h.Set("X-Request-Id", c.ID)
+	if o != nil {
+		if o.Provider != "" {
+			h.Set("X-Switchyard-Provider", o.Provider)
+			h.Set("X-Switchyard-Model", o.Model)
+		}
+		h.Set("X-Switchyard-Attempts", itoa(o.Attempts))
+		h.Set("X-Switchyard-Fallback-Depth", itoa(o.FallbackDepth))
+		if o.Cache != "" {
+			h.Set("X-Switchyard-Cache", o.Cache)
+		}
+	}
+	if c.Budget == budget.Soft {
+		h.Set("X-Switchyard-Budget", "soft-limit-reached")
+	}
+}
+
+// serve runs a canonical request through the gateway and writes the result
+// with the surface's writers.
+func (s *Server) serve(w http.ResponseWriter, r *http.Request, sf surface, key *auth.Key, req *llm.Request,
+	writeResp func(*llm.Response), relay func(provider.Stream)) {
+	c := s.gw.NewCall(sf.name(), key, req, r.Header)
+	if err := s.gw.Admit(r.Context(), c); err != nil {
+		s.setHeaders(w, c, nil)
+		sf.writeError(w, err)
+		s.gw.Finish(c, &gateway.Outcome{Err: err, Status: gateway.StatusOf(err)})
+		return
+	}
+	if !req.Stream {
+		resp, o, err := s.gw.Complete(r.Context(), c)
+		s.setHeaders(w, c, o)
+		if err != nil {
+			sf.writeError(w, err)
+		} else {
+			writeResp(resp)
+		}
+		s.gw.Finish(c, o)
+		return
+	}
+	stream, o, err := s.gw.Stream(r.Context(), c)
+	s.setHeaders(w, c, o)
+	if err != nil {
+		sf.writeError(w, err)
+		s.gw.Finish(c, o)
+		return
+	}
+	defer stream.Close()
+	relay(stream)
+}
+
+func (s *Server) chatCompletions(w http.ResponseWriter, r *http.Request, key *auth.Key) {
+	sf := openAISurface{}
 	body, err := readBody(w, r)
 	if err != nil {
-		s.openAIError(w, err)
+		sf.writeError(w, err)
 		return
 	}
 	var in oai.ChatRequest
 	if err := json.Unmarshal(body, &in); err != nil {
-		s.openAIError(w, badRequest("invalid JSON: "+err.Error()))
+		sf.writeError(w, badRequest("invalid JSON: "+err.Error()))
 		return
 	}
 	req, err := translate.FromOpenAI(&in)
 	if err != nil {
-		s.openAIError(w, err)
-		return
-	}
-	route, err := s.router.Resolve(req.Model)
-	if err != nil {
-		s.openAIError(w, err)
+		sf.writeError(w, err)
 		return
 	}
 	created := s.now().Unix()
-	if !req.Stream {
-		resp, _, err := s.router.Complete(r.Context(), route, req)
-		if err != nil {
-			s.openAIError(w, err)
-			return
-		}
-		writeJSON(w, http.StatusOK, translate.ToOpenAIResponse(resp, created))
-		return
-	}
-	stream, _, err := s.router.Stream(r.Context(), route, req)
-	if err != nil {
-		s.openAIError(w, err)
-		return
-	}
-	defer stream.Close()
 	includeUsage := in.StreamOptions != nil && in.StreamOptions.IncludeUsage
-	s.relayOpenAI(w, stream, translate.NewOpenAIStreamWriter(created, includeUsage))
+	s.serve(w, r, sf, key, req,
+		func(resp *llm.Response) { writeJSON(w, http.StatusOK, translate.ToOpenAIResponse(resp, created)) },
+		func(st provider.Stream) { relayOpenAI(w, st, translate.NewOpenAIStreamWriter(created, includeUsage)) })
 }
 
-// relayOpenAI writes a canonical stream as OpenAI chunks. Once the first chunk
-// is out, an upstream error can only be reported in-band.
-func (s *Server) relayOpenAI(w http.ResponseWriter, stream provider.Stream, conv *translate.OpenAIStreamWriter) {
-	sw := sse.NewWriter(w)
-	for {
-		ev, err := stream.Next()
-		if errors.Is(err, io.EOF) {
-			return
-		}
-		if err != nil {
-			ae := toAPIError(err)
-			b, _ := json.Marshal(oai.ErrorResponse{Error: oai.ErrorBody{Message: ae.Message, Type: ae.Type}})
-			_ = sw.Write("", b)
-			return
-		}
-		chunks, done := conv.Event(ev)
-		for _, c := range chunks {
-			b, _ := json.Marshal(c)
-			if sw.Write("", b) != nil {
-				return
-			}
-		}
-		if done {
-			_ = sw.Write("", []byte("[DONE]"))
-			return
-		}
-	}
-}
-
-func (s *Server) embeddings(w http.ResponseWriter, r *http.Request) {
+func (s *Server) embeddings(w http.ResponseWriter, r *http.Request, key *auth.Key) {
+	sf := openAISurface{}
 	body, err := readBody(w, r)
 	if err != nil {
-		s.openAIError(w, err)
+		sf.writeError(w, err)
 		return
 	}
 	var in oai.EmbeddingRequest
 	if err := json.Unmarshal(body, &in); err != nil {
-		s.openAIError(w, badRequest("invalid JSON: "+err.Error()))
+		sf.writeError(w, badRequest("invalid JSON: "+err.Error()))
 		return
 	}
-	route, err := s.router.Resolve(in.Model)
+	text := strings.Join(in.Input, " ")
+	req := &llm.Request{Model: in.Model, Messages: []llm.Message{{Role: "user", Content: []llm.Block{{Type: "text", Text: text}}}}}
+	c := s.gw.NewCall("openai", key, req, r.Header)
+	if err := s.gw.Admit(r.Context(), c); err != nil {
+		sf.writeError(w, err)
+		s.gw.Finish(c, &gateway.Outcome{Err: err})
+		return
+	}
+	resp, o, err := s.gw.Embed(r.Context(), c, &in)
+	s.setHeaders(w, c, o)
 	if err != nil {
-		s.openAIError(w, err)
-		return
+		sf.writeError(w, err)
+	} else {
+		resp.Model = in.Model
+		writeJSON(w, http.StatusOK, resp)
 	}
-	t := route.Targets[0]
-	up := in
-	up.Model = t.Model
-	resp, err := t.Provider.Embed(r.Context(), &up)
-	if err != nil {
-		s.openAIError(w, err)
-		return
-	}
-	resp.Model = in.Model
-	writeJSON(w, http.StatusOK, resp)
+	s.gw.Finish(c, o)
 }
 
-func (s *Server) models(w http.ResponseWriter, _ *http.Request) {
-	aliases := s.router.Aliases()
+func (s *Server) models(w http.ResponseWriter, _ *http.Request, key *auth.Key) {
+	aliases := s.gw.Router.Aliases()
 	sort.Strings(aliases)
 	data := make([]map[string]any, 0, len(aliases))
 	for _, a := range aliases {
-		data = append(data, map[string]any{"id": a, "object": "model", "created": 0, "owned_by": "switchyard"})
+		if key.Allows(a) {
+			data = append(data, map[string]any{"id": a, "object": "model", "created": 0, "owned_by": "switchyard"})
+		}
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"object": "list", "data": data})
 }

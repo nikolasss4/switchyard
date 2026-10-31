@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/nikolasss4/switchyard/internal/auth"
 	"github.com/nikolasss4/switchyard/internal/llm"
 	"github.com/nikolasss4/switchyard/internal/provider"
 	"github.com/nikolasss4/switchyard/internal/sse"
@@ -41,43 +42,26 @@ func parseMessages(body []byte, h http.Header) (*llm.Request, error) {
 	return &req, nil
 }
 
-func (s *Server) messages(w http.ResponseWriter, r *http.Request) {
+func (s *Server) messages(w http.ResponseWriter, r *http.Request, key *auth.Key) {
+	sf := anthropicSurface{}
 	body, err := readBody(w, r)
 	if err != nil {
-		s.anthropicError(w, err)
+		sf.writeError(w, err)
 		return
 	}
 	req, err := parseMessages(body, r.Header)
 	if err != nil {
-		s.anthropicError(w, err)
+		sf.writeError(w, err)
 		return
 	}
-	route, err := s.router.Resolve(req.Model)
-	if err != nil {
-		s.anthropicError(w, err)
-		return
-	}
-	if !req.Stream {
-		resp, _, err := s.router.Complete(r.Context(), route, req)
-		if err != nil {
-			s.anthropicError(w, err)
-			return
-		}
-		writeJSON(w, http.StatusOK, resp)
-		return
-	}
-	stream, _, err := s.router.Stream(r.Context(), route, req)
-	if err != nil {
-		s.anthropicError(w, err)
-		return
-	}
-	defer stream.Close()
-	s.relayAnthropic(w, stream)
+	s.serve(w, r, sf, key, req,
+		func(resp *llm.Response) { writeJSON(w, http.StatusOK, resp) },
+		func(st provider.Stream) { relayAnthropic(w, st) })
 }
 
 // relayAnthropic writes a canonical stream as Messages API events. Events from
 // an Anthropic upstream are relayed byte for byte.
-func (s *Server) relayAnthropic(w http.ResponseWriter, stream provider.Stream) {
+func relayAnthropic(w http.ResponseWriter, stream provider.Stream) {
 	sw := sse.NewWriter(w)
 	for {
 		ev, err := stream.Next()

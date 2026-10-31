@@ -9,13 +9,20 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/nikolasss4/switchyard/internal/auth"
+	"github.com/nikolasss4/switchyard/internal/budget"
 	"github.com/nikolasss4/switchyard/internal/config"
+	"github.com/nikolasss4/switchyard/internal/gateway"
+	"github.com/nikolasss4/switchyard/internal/limiter"
 	"github.com/nikolasss4/switchyard/internal/mock"
 	"github.com/nikolasss4/switchyard/internal/oai"
+	"github.com/nikolasss4/switchyard/internal/pricing"
 	"github.com/nikolasss4/switchyard/internal/provider"
 	"github.com/nikolasss4/switchyard/internal/router"
 	"github.com/nikolasss4/switchyard/internal/sse"
+	"github.com/nikolasss4/switchyard/internal/usage"
 )
 
 // harness runs the gateway against one mock, exposed both as an OpenAI-
@@ -23,6 +30,11 @@ import (
 type harness struct {
 	mock    *mock.Server
 	gateway *httptest.Server
+	keys    auth.Static
+	key     string // plaintext of the default key
+	usage   *usage.Memory
+	spend   *budget.Memory
+	limiter *limiter.Memory
 }
 
 func newHarness(t *testing.T) *harness {
@@ -36,22 +48,43 @@ providers:
   - {name: mock-anth, type: anthropic, base_url: ` + upstream.URL + `}
 models:
   - alias: via-openai
-    targets: [{provider: mock-oai, model: m1}]
+    targets: [{provider: mock-oai, model: mock-fast}]
   - alias: via-anthropic
-    targets: [{provider: mock-anth, model: m2}]
+    targets: [{provider: mock-anth, model: mock-smart}]
 `))
 	if err != nil {
 		t.Fatal(err)
 	}
-	r := router.New(cfg, provider.FromConfig(cfg, provider.NewHTTPClient()))
-	gw := httptest.NewServer(New(r, slog.New(slog.DiscardHandler)).Handler())
-	t.Cleanup(gw.Close)
-	return &harness{mock: m, gateway: gw}
+	prices, err := pricing.Load("../../pricing/prices.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := &harness{mock: m, keys: auth.Static{}, usage: &usage.Memory{}, spend: budget.NewMemory(), limiter: limiter.NewMemory()}
+	h.key, _ = h.keys.NewStaticKey(auth.Key{TenantID: "t1", Name: "default"})
+	g := gateway.New(gateway.Deps{
+		Router:  router.New(cfg, provider.FromConfig(cfg, provider.NewHTTPClient())),
+		Limiter: h.limiter, Spend: h.spend, Prices: prices, Usage: h.usage,
+	})
+	h.gateway = httptest.NewServer(New(g, auth.NewAuthenticator(h.keys, time.Minute), slog.New(slog.DiscardHandler)).Handler())
+	t.Cleanup(h.gateway.Close)
+	return h
 }
 
 func (h *harness) post(t *testing.T, path, body string) *http.Response {
 	t.Helper()
-	resp, err := http.Post(h.gateway.URL+path, "application/json", strings.NewReader(body))
+	return h.postKey(t, h.key, path, body)
+}
+
+func (h *harness) postKey(t *testing.T, key, path, body string) *http.Response {
+	t.Helper()
+	req, _ := http.NewRequest(http.MethodPost, h.gateway.URL+path, strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	if strings.HasSuffix(path, "/messages") {
+		req.Header.Set("x-api-key", key)
+	} else {
+		req.Header.Set("Authorization", "Bearer "+key)
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatal(err)
 	}
