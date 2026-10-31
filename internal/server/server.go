@@ -219,7 +219,7 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request, sf surface, key *
 		s.gw.Finish(c, o)
 		return
 	}
-	defer stream.Close()
+	defer func() { _ = stream.Close() }()
 	relay(stream)
 }
 

@@ -43,7 +43,7 @@ func outcome() *gateway.Outcome {
 func attrs(kv []attribute.KeyValue) map[string]string {
 	m := map[string]string{}
 	for _, a := range kv {
-		m[string(a.Key)] = a.Value.Emit()
+		m[string(a.Key)] = a.Value.String()
 	}
 	return m
 }

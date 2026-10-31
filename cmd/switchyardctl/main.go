@@ -40,13 +40,14 @@ func (c *client) do(method, path string, body any, out any) error {
 		}
 		rd = bytes.NewReader(b)
 	}
-	req, err := http.NewRequest(method, c.base+path, rd) //nolint:noctx // short-lived CLI
+	// The base URL is the operator's own SWITCHYARD_ADMIN_URL.
+	req, err := http.NewRequest(method, c.base+path, rd) //nolint:noctx,gosec // short-lived CLI
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Authorization", "Bearer "+c.token)
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := c.http.Do(req)
+	resp, err := c.http.Do(req) //nolint:gosec // see above
 	if err != nil {
 		return err
 	}
@@ -62,7 +63,11 @@ func (c *client) do(method, path string, body any, out any) error {
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
-		fmt.Fprintln(os.Stderr, "error:", err)
+		if errors.Is(err, errUsage) {
+			fmt.Fprintln(os.Stderr, usage)
+		} else {
+			fmt.Fprintln(os.Stderr, "error:", err)
+		}
 		os.Exit(1)
 	}
 }
@@ -79,13 +84,15 @@ const usage = `usage: switchyardctl <tenants|keys|usage|providers> ...
 Environment: SWITCHYARD_ADMIN_URL (default http://localhost:9091), SWITCHYARD_ADMIN_TOKEN.
 Add --json before the command for raw JSON output.`
 
+var errUsage = errors.New("usage")
+
 func run(args []string) error {
 	asJSON := false
 	if len(args) > 0 && args[0] == "--json" {
 		asJSON, args = true, args[1:]
 	}
 	if len(args) == 0 {
-		return errors.New(usage)
+		return errUsage
 	}
 	base := os.Getenv("SWITCHYARD_ADMIN_URL")
 	if base == "" {
@@ -255,7 +262,7 @@ func run(args []string) error {
 			}
 		})
 	}
-	return errors.New(usage)
+	return errUsage
 }
 
 // positional takes the leading positional argument, so flags can follow it.

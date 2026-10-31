@@ -88,7 +88,7 @@ func (p *Anthropic) post(ctx context.Context, req *llm.Request, stream bool) (*h
 	for k, v := range p.cfg.Headers {
 		hr.Header.Set(k, v)
 	}
-	resp, err := p.client.Do(hr)
+	resp, err := p.client.Do(hr) //nolint:bodyclose // returned to the caller, which closes it
 	if err != nil {
 		return nil, transportError(p.cfg.Name, err)
 	}
@@ -127,7 +127,7 @@ func (p *Anthropic) Complete(ctx context.Context, req *llm.Request) (*llm.Respon
 }
 
 func (p *Anthropic) Stream(ctx context.Context, req *llm.Request) (Stream, error) {
-	resp, err := p.post(ctx, req, true)
+	resp, err := p.post(ctx, req, true) //nolint:bodyclose // the stream owns the body and closes it
 	if err != nil {
 		return nil, err
 	}

@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -59,8 +60,8 @@ func TestAnthropicErrors(t *testing.T) {
 	defer ts.Close()
 	p := NewAnthropic(AnthropicConfig{Name: "a", BaseURL: ts.URL}, ts.Client())
 	_, err := p.Complete(context.Background(), &llm.Request{Model: "m", MaxTokens: 1})
-	pe, ok := err.(*Error)
-	if !ok || pe.Status != 529 || pe.Type != "overloaded_error" || !pe.Retryable() || pe.RetryAfter.Seconds() != 3 {
+	var pe *Error
+	if !errors.As(err, &pe) || pe.Status != 529 || pe.Type != "overloaded_error" || !pe.Retryable() || pe.RetryAfter.Seconds() != 3 {
 		t.Fatalf("err = %#v", err)
 	}
 }
@@ -83,7 +84,8 @@ func TestAnthropicStreamErrorEvent(t *testing.T) {
 		t.Fatalf("first = %v %v", ev, err)
 	}
 	_, err = s.Next()
-	if pe, ok := err.(*Error); !ok || pe.Status != 529 || !pe.Retryable() {
+	var pe *Error
+	if !errors.As(err, &pe) || pe.Status != 529 || !pe.Retryable() {
 		t.Fatalf("want retryable 529, got %v", err)
 	}
 }

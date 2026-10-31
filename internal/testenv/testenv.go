@@ -61,7 +61,7 @@ func Postgres(t *testing.T) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer conn.Close(ctx)
+	defer func() { _ = conn.Close(ctx) }()
 	b := make([]byte, 6)
 	_, _ = rand.Read(b)
 	name := "test_" + hex.EncodeToString(b)

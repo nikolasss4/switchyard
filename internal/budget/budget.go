@@ -9,6 +9,7 @@ package budget
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -83,7 +84,7 @@ func (r *Redis) Spent(ctx context.Context, keyID string, now time.Time) (float64
 	start, month := Month(now)
 	k := r.key(keyID, month)
 	v, err := r.client.Get(ctx, k).Result()
-	if err == redis.Nil {
+	if errors.Is(err, redis.Nil) {
 		if err := r.seedKey(ctx, k, keyID, start); err != nil {
 			return 0, err
 		}

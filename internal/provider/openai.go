@@ -56,7 +56,7 @@ func (p *OpenAI) post(ctx context.Context, path string, body any) (*http.Respons
 	for k, v := range p.cfg.Headers {
 		req.Header.Set(k, v)
 	}
-	resp, err := p.client.Do(req)
+	resp, err := p.client.Do(req) //nolint:bodyclose // returned to the caller, which closes it
 	if err != nil {
 		return nil, transportError(p.cfg.Name, err)
 	}
@@ -97,7 +97,7 @@ func (p *OpenAI) Complete(ctx context.Context, req *llm.Request) (*llm.Response,
 func (p *OpenAI) Stream(ctx context.Context, req *llm.Request) (Stream, error) {
 	r := *req
 	r.Stream = true
-	resp, err := p.post(ctx, "/chat/completions", translate.ToOpenAIRequest(&r, p.cfg.MaxTokensField))
+	resp, err := p.post(ctx, "/chat/completions", translate.ToOpenAIRequest(&r, p.cfg.MaxTokensField)) //nolint:bodyclose // the stream owns the body
 	if err != nil {
 		return nil, err
 	}

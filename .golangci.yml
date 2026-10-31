@@ -11,6 +11,13 @@ linters:
     - revive
     - unconvert
   settings:
+    errcheck:
+      exclude-functions:
+        - (io.Closer).Close
+        - (io.ReadCloser).Close
+        - (*github.com/redis/go-redis/v9.Client).Close
+        - fmt.Fprintf
+        - fmt.Fprintln
     gosec:
       excludes:
         - G104 # unhandled errors are caught by errcheck
@@ -21,7 +28,10 @@ linters:
   exclusions:
     rules:
       - path: _test\.go
-        linters: [gosec, noctx, bodyclose]
+        linters: [gosec, noctx, bodyclose, errcheck]
+      # The mock provider's randomness only shapes fake latency and errors.
+      - path: internal/mock/
+        text: G404
 formatters:
   enable:
     - gofmt

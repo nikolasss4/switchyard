@@ -83,7 +83,8 @@ func TestOpenHalfOpenClosed(t *testing.T) {
 	}
 	*now = now.Add(5 * time.Second)
 	// Half-open: exactly two concurrent probes.
-	if !b.Allow() || !b.Allow() || b.Allow() {
+	first, second, third := b.Allow(), b.Allow(), b.Allow()
+	if !first || !second || third {
 		t.Fatal("half-open must admit exactly Probes calls")
 	}
 	b.Record(false)
