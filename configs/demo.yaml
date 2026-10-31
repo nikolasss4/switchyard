@@ -24,7 +24,7 @@ models:
       - {provider: mock-b, model: mock-smart}
       - {provider: mock-a, model: mock-smart}
   - alias: hedged
-    hedge_after: 150ms
+    hedge_after: 400ms # above the mocks' typical latency, so only slow outliers are hedged
     targets:
       - {provider: mock-a, model: mock-fast}
       - {provider: mock-b, model: mock-fast}

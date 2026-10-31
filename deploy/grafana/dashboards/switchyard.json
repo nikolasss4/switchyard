@@ -71,7 +71,7 @@
     {
       "id": 2,
       "type": "stat",
-      "title": "Success rate",
+      "title": "2xx share (refusals count against it)",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -570,7 +570,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (provider) (rate(switchyard_upstream_attempt_duration_seconds_count{outcome=\"error\"}[$__rate_interval])) / clamp_min(sum by (provider) (rate(switchyard_upstream_attempt_duration_seconds_count[$__rate_interval])), 1e-9)",
+          "expr": "(sum by (provider) (rate(switchyard_upstream_attempt_duration_seconds_count{outcome=\"error\"}[$__rate_interval])) or 0 * sum by (provider) (rate(switchyard_upstream_attempt_duration_seconds_count[$__rate_interval]))) / clamp_min(sum by (provider) (rate(switchyard_upstream_attempt_duration_seconds_count[$__rate_interval])), 1e-9)",
           "legendFormat": "{{provider}}",
           "datasource": {
             "type": "prometheus",
