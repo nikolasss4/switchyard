@@ -106,7 +106,7 @@ type Outcome struct {
 
 // Admit resolves the route and applies model access, budget and rate limits.
 func (g *Gateway) Admit(ctx context.Context, c *Call) error {
-	route, err := g.Router.Resolve(c.Req.Model)
+	route, err := g.Router.Resolve(c.Req.Model, c.Key.TenantID, c.Header)
 	if err != nil {
 		return err
 	}
@@ -216,11 +216,14 @@ func (g *Gateway) Stream(ctx context.Context, c *Call) (provider.Stream, *Outcom
 	return &metered{Stream: s, g: g, c: c, o: o}, o, nil
 }
 
-func fillTarget(o *Outcome, t *router.Target) {
-	if t != nil && t.Provider != nil {
+func fillTarget(o *Outcome, res *router.Result) {
+	if res == nil {
+		return
+	}
+	if t := res.Target; t != nil && t.Provider != nil {
 		o.Provider, o.Model = t.Provider.Name(), t.Model
 	}
-	o.Attempts = 1
+	o.Attempts, o.FallbackDepth = res.Attempts, res.FallbackDepth
 }
 
 // Finish settles accounting for a call. It is safe to call once per call.
