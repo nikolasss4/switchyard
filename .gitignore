@@ -1,0 +1,10 @@
+/bin/
+/dist/
+*.test
+*.out
+coverage.*
+.env
+.venv/
+__pycache__/
+/bench/out/
+/.tmp/
