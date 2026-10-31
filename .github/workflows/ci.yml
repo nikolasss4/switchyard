@@ -1,0 +1,80 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: {go-version-file: go.mod}
+      - uses: golangci/golangci-lint-action@v8
+        with: {version: latest}
+      - uses: astral-sh/setup-uv@v6
+      - run: uvx ruff check tests/conformance && uvx ruff format --check tests/conformance
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: {go-version-file: go.mod}
+      - run: go vet ./... && go vet -tags integration ./...
+      - name: unit tests with the race detector
+        run: go test -race -count=1 ./...
+      - name: integration tests (testcontainers Postgres with pgvector, Redis)
+        run: go test -tags integration -race -count=1 ./...
+
+  conformance:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env: {POSTGRES_PASSWORD: postgres}
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U postgres" --health-interval 2s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
+      REDIS_URL: redis://localhost:6379/0
+      SWITCHYARD_ADMIN_TOKEN: dev-admin-token
+      SWITCHYARD_DEMO_KEY: sy_demo0000_demodemodemodemodemodemodemodemo
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: {go-version-file: go.mod}
+      - uses: astral-sh/setup-uv@v6
+      - run: go build -o bin/ ./cmd/...
+      - name: start mocks and gateway
+        run: |
+          ./bin/mockllm -addr 127.0.0.1:9101 -name mock-a > mock-a.log 2>&1 &
+          ./bin/mockllm -addr 127.0.0.1:9102 -name mock-b > mock-b.log 2>&1 &
+          ./bin/switchyard -config configs/local.yaml > gateway.log 2>&1 &
+          for i in $(seq 50); do curl -sf localhost:8080/healthz && break; sleep 0.2; done
+      - name: official OpenAI and Anthropic SDKs against the gateway
+        working-directory: tests/conformance
+        run: uv run pytest -v
+      - if: failure()
+        run: tail -n 100 gateway.log
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          build-args: VERSION=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

@@ -1,0 +1,5 @@
+.git
+bin
+bench/out
+tests/conformance/.venv
+**/__pycache__
