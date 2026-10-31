@@ -19,9 +19,11 @@ type Reader struct {
 	r *bufio.Reader
 }
 
-// NewReader returns a Reader over r.
+// NewReader returns a Reader over r. The buffer is small because a gateway
+// holds one per open stream; longer lines are still read whole (ReadBytes
+// grows past the buffer).
 func NewReader(r io.Reader) *Reader {
-	return &Reader{r: bufio.NewReaderSize(r, 64<<10)}
+	return &Reader{r: bufio.NewReaderSize(r, 4<<10)}
 }
 
 // Next returns the next event with data, skipping comments. It returns io.EOF

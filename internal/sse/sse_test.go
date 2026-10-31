@@ -39,3 +39,12 @@ func TestReaderHandlesCRLF(t *testing.T) {
 		t.Fatalf("got %+v, %v", ev, err)
 	}
 }
+
+func TestReaderLongLine(t *testing.T) {
+	long := strings.Repeat("x", 100<<10)
+	r := NewReader(strings.NewReader("data: " + long + "\n\n"))
+	ev, err := r.Next()
+	if err != nil || string(ev.Data) != long {
+		t.Fatalf("len %d err %v", len(ev.Data), err)
+	}
+}
