@@ -1,0 +1,35 @@
+2026/10/31 12:24:25 == overhead
+2026/10/31 12:25:08 openai   250 rps: direct p50 20.48 p99 21.32 | gateway p50 21.42 p99 21.88 ok 1.0000 | +p50 0.94 +p99 0.55 ms, 0.22 cores
+2026/10/31 12:25:48 openai   500 rps: direct p50 20.47 p99 21.30 | gateway p50 21.10 p99 21.93 ok 1.0000 | +p50 0.63 +p99 0.63 ms, 0.44 cores
+2026/10/31 12:26:28 openai  1000 rps: direct p50 20.75 p99 21.30 | gateway p50 21.04 p99 22.11 ok 1.0000 | +p50 0.29 +p99 0.81 ms, 0.78 cores
+2026/10/31 12:27:08 openai  2000 rps: direct p50 20.45 p99 21.40 | gateway p50 21.21 p99 24.36 ok 1.0000 | +p50 0.77 +p99 2.96 ms, 1.27 cores
+2026/10/31 12:27:48 openai  4000 rps: direct p50 20.55 p99 21.57 | gateway p50 23.16 p99 47.16 ok 1.0000 | +p50 2.61 +p99 25.60 ms, 1.88 cores
+2026/10/31 12:28:32 anthropic   250 rps: direct p50 20.53 p99 21.36 | gateway p50 21.18 p99 22.19 ok 1.0000 | +p50 0.64 +p99 0.83 ms, 0.24 cores
+2026/10/31 12:29:12 anthropic   500 rps: direct p50 20.51 p99 21.35 | gateway p50 21.14 p99 22.12 ok 1.0000 | +p50 0.62 +p99 0.77 ms, 0.44 cores
+2026/10/31 12:29:52 anthropic  1000 rps: direct p50 20.75 p99 21.32 | gateway p50 21.04 p99 22.21 ok 1.0000 | +p50 0.29 +p99 0.89 ms, 0.79 cores
+2026/10/31 12:30:32 anthropic  2000 rps: direct p50 20.45 p99 21.37 | gateway p50 21.21 p99 24.14 ok 1.0000 | +p50 0.76 +p99 2.77 ms, 1.34 cores
+2026/10/31 12:31:12 anthropic  4000 rps: direct p50 20.61 p99 21.69 | gateway p50 24.36 p99 61.83 ok 1.0000 | +p50 3.76 +p99 40.14 ms, 1.91 cores
+2026/10/31 12:31:12 == overhead done in 6m47s
+2026/10/31 12:31:12 == throughput
+2026/10/31 12:31:42 concurrency   16: mock 25281 rps | gateway 4616 rps, errors 0.0000, p99 7.8 ms, 2.00 cores, 159 MB
+2026/10/31 12:32:12 concurrency   64: mock 27977 rps | gateway 4960 rps, errors 0.0000, p99 33.3 ms, 1.97 cores, 229 MB
+2026/10/31 12:32:42 concurrency  256: mock 27614 rps | gateway 5180 rps, errors 0.0000, p99 99.8 ms, 2.15 cores, 253 MB
+2026/10/31 12:33:12 concurrency 1024: mock 26111 rps | gateway 4729 rps, errors 0.0000, p99 344.7 ms, 2.10 cores, 338 MB
+2026/10/31 12:33:12 == throughput done in 2m0s
+2026/10/31 12:33:12 == stream
+2026/10/31 12:33:20 ttft openai: direct p50 101.64 p99 104.78 | gateway p50 103.65 p99 109.57 (400 samples)
+2026/10/31 12:33:28 ttft anthropic: direct p50 101.66 p99 104.39 | gateway p50 103.65 p99 110.69 (400 samples)
+2026/10/31 12:33:40 1000 concurrent streams: 1000 ok, 0 failed, ttft p99 3.1 ms, peak RSS 317 MB, 6261 goroutines, 0.51 cores
+2026/10/31 12:33:57 5000 concurrent streams: 5000 ok, 0 failed, ttft p99 1520.8 ms, peak RSS 780 MB, 23751 goroutines, 1.84 cores
+2026/10/31 12:34:25 10000 concurrent streams: 10000 ok, 0 failed, ttft p99 11840.3 ms, peak RSS 1569 MB, 49228 goroutines, 1.67 cores
+2026/10/31 12:34:28 == stream done in 1m16s
+2026/10/31 12:34:28 == chaos
+2026/10/31 12:34:34 t=0s healthy
+2026/10/31 12:34:54 t=20s primary 50% errors
+2026/10/31 12:35:19 t=45s primary down
+2026/10/31 12:35:44 t=70s primary recovered
+2026/10/31 12:36:14 healthy              gateway 3999/3999 ok (100.00%), direct 100.00%, 0% via secondary, p99 22.0 ms
+2026/10/31 12:36:14 primary 50% errors   gateway 5000/5000 ok (100.00%), direct 50.52%, 100% via secondary, p99 22.1 ms
+2026/10/31 12:36:14 primary down         gateway 5000/5000 ok (100.00%), direct 0.00%, 100% via secondary, p99 22.0 ms
+2026/10/31 12:36:14 primary recovered    gateway 6000/6000 ok (100.00%), direct 100.00%, 1% via secondary, p99 22.0 ms
+2026/10/31 12:36:14 == chaos done in 1m46s

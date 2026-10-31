@@ -1,0 +1,376 @@
+{
+  "duration_s": 20,
+  "mock_latency_ms": 20,
+  "rows": [
+    {
+      "surface": "openai",
+      "target_rps": 250,
+      "direct": {
+        "rate": 250.04331822957573,
+        "requests": 5000,
+        "success_ratio": 1,
+        "throughput": 249.77889222769554,
+        "latency": {
+          "p50_ms": 20.475,
+          "p90_ms": 21.226,
+          "p95_ms": 21.27,
+          "p99_ms": 21.322,
+          "max_ms": 22.112,
+          "mean_ms": 20.6
+        }
+      },
+      "gateway": {
+        "rate": 250.0438138647735,
+        "requests": 5000,
+        "success_ratio": 1,
+        "throughput": 249.77327576465692,
+        "latency": {
+          "p50_ms": 21.417,
+          "p90_ms": 21.703,
+          "p95_ms": 21.751,
+          "p99_ms": 21.876,
+          "max_ms": 23.613,
+          "mean_ms": 21.342
+        }
+      },
+      "added_p50_ms": 0.9420000000000002,
+      "added_p95_ms": 0.48100000000000165,
+      "added_p99_ms": 0.554000000000002,
+      "gateway_cpu_cores": 0.22320639758574973,
+      "gateway_rss_mb": 47.587328
+    },
+    {
+      "surface": "openai",
+      "target_rps": 500,
+      "direct": {
+        "rate": 500.03463977466174,
+        "requests": 10000,
+        "success_ratio": 1,
+        "throughput": 499.5208341652822,
+        "latency": {
+          "p50_ms": 20.474,
+          "p90_ms": 20.998,
+          "p95_ms": 21.206,
+          "p99_ms": 21.296,
+          "max_ms": 21.753,
+          "mean_ms": 20.551
+        }
+      },
+      "gateway": {
+        "rate": 500.0528857682173,
+        "requests": 10000,
+        "success_ratio": 1,
+        "throughput": 499.52632533588707,
+        "latency": {
+          "p50_ms": 21.101,
+          "p90_ms": 21.707,
+          "p95_ms": 21.778,
+          "p99_ms": 21.927,
+          "max_ms": 23.666,
+          "mean_ms": 21.174
+        }
+      },
+      "added_p50_ms": 0.6269999999999989,
+      "added_p95_ms": 0.5719999999999992,
+      "added_p99_ms": 0.6310000000000002,
+      "gateway_cpu_cores": 0.43850378350573643,
+      "gateway_rss_mb": 50.31936
+    },
+    {
+      "surface": "openai",
+      "target_rps": 1000,
+      "direct": {
+        "rate": 1000.0186189966606,
+        "requests": 20000,
+        "success_ratio": 1,
+        "throughput": 998.9716943010731,
+        "latency": {
+          "p50_ms": 20.753,
+          "p90_ms": 21.053,
+          "p95_ms": 21.147,
+          "p99_ms": 21.301,
+          "max_ms": 22.655,
+          "mean_ms": 20.723
+        }
+      },
+      "gateway": {
+        "rate": 1000.0567381690372,
+        "requests": 20000,
+        "success_ratio": 1,
+        "throughput": 998.9814372279266,
+        "latency": {
+          "p50_ms": 21.043,
+          "p90_ms": 21.765,
+          "p95_ms": 21.865,
+          "p99_ms": 22.11,
+          "max_ms": 25.045,
+          "mean_ms": 21.18
+        }
+      },
+      "added_p50_ms": 0.28999999999999915,
+      "added_p95_ms": 0.718,
+      "added_p99_ms": 0.809000000000001,
+      "gateway_cpu_cores": 0.7756107417309209,
+      "gateway_rss_mb": 54.484992
+    },
+    {
+      "surface": "openai",
+      "target_rps": 2000,
+      "direct": {
+        "rate": 2000.2292222684137,
+        "requests": 40000,
+        "success_ratio": 1,
+        "throughput": 1998.197436682815,
+        "latency": {
+          "p50_ms": 20.449,
+          "p90_ms": 20.993,
+          "p95_ms": 21.172,
+          "p99_ms": 21.404,
+          "max_ms": 23.73,
+          "mean_ms": 20.546
+        }
+      },
+      "gateway": {
+        "rate": 2000.0322563202267,
+        "requests": 40000,
+        "success_ratio": 1,
+        "throughput": 1997.9140805014365,
+        "latency": {
+          "p50_ms": 21.215,
+          "p90_ms": 22.087,
+          "p95_ms": 22.517,
+          "p99_ms": 24.359,
+          "max_ms": 35.984,
+          "mean_ms": 21.42
+        }
+      },
+      "added_p50_ms": 0.7659999999999982,
+      "added_p95_ms": 1.3449999999999989,
+      "added_p99_ms": 2.955000000000002,
+      "gateway_cpu_cores": 1.2704949116967192,
+      "gateway_rss_mb": 63.791104
+    },
+    {
+      "surface": "openai",
+      "target_rps": 4000,
+      "direct": {
+        "rate": 3999.855531006155,
+        "requests": 79998,
+        "success_ratio": 1,
+        "throughput": 3995.7401394294448,
+        "latency": {
+          "p50_ms": 20.553,
+          "p90_ms": 21.044,
+          "p95_ms": 21.229,
+          "p99_ms": 21.565,
+          "max_ms": 23.961,
+          "mean_ms": 20.618
+        }
+      },
+      "gateway": {
+        "rate": 4000.12485245752,
+        "requests": 79999,
+        "success_ratio": 1,
+        "throughput": 3995.8402148052132,
+        "latency": {
+          "p50_ms": 23.161,
+          "p90_ms": 28.512,
+          "p95_ms": 32.524,
+          "p99_ms": 47.161,
+          "max_ms": 107.461,
+          "mean_ms": 24.617
+        }
+      },
+      "added_p50_ms": 2.6080000000000005,
+      "added_p95_ms": 11.295000000000002,
+      "added_p99_ms": 25.596,
+      "gateway_cpu_cores": 1.8778219376195466,
+      "gateway_rss_mb": 114.835456
+    },
+    {
+      "surface": "anthropic",
+      "target_rps": 250,
+      "direct": {
+        "rate": 250.04543399299055,
+        "requests": 5000,
+        "success_ratio": 1,
+        "throughput": 249.78148742057124,
+        "latency": {
+          "p50_ms": 20.534,
+          "p90_ms": 21.221,
+          "p95_ms": 21.278,
+          "p99_ms": 21.359,
+          "max_ms": 23.462,
+          "mean_ms": 20.637
+        }
+      },
+      "gateway": {
+        "rate": 250.04067252844192,
+        "requests": 5000,
+        "success_ratio": 1,
+        "throughput": 249.7683761349683,
+        "latency": {
+          "p50_ms": 21.177,
+          "p90_ms": 21.798,
+          "p95_ms": 21.852,
+          "p99_ms": 22.187,
+          "max_ms": 28.101,
+          "mean_ms": 21.281
+        }
+      },
+      "added_p50_ms": 0.6430000000000007,
+      "added_p95_ms": 0.5740000000000016,
+      "added_p99_ms": 0.8279999999999994,
+      "gateway_cpu_cores": 0.24220610306969304,
+      "gateway_rss_mb": 114.966528
+    },
+    {
+      "surface": "anthropic",
+      "target_rps": 500,
+      "direct": {
+        "rate": 500.0342905015157,
+        "requests": 10000,
+        "success_ratio": 1,
+        "throughput": 499.50713034537796,
+        "latency": {
+          "p50_ms": 20.512,
+          "p90_ms": 21.092,
+          "p95_ms": 21.232,
+          "p99_ms": 21.346,
+          "max_ms": 26.005,
+          "mean_ms": 20.595
+        }
+      },
+      "gateway": {
+        "rate": 500.0318896337677,
+        "requests": 10000,
+        "success_ratio": 1,
+        "throughput": 499.50076182572474,
+        "latency": {
+          "p50_ms": 21.137,
+          "p90_ms": 21.742,
+          "p95_ms": 21.812,
+          "p99_ms": 22.12,
+          "max_ms": 26.707,
+          "mean_ms": 21.217
+        }
+      },
+      "added_p50_ms": 0.625,
+      "added_p95_ms": 0.5800000000000018,
+      "added_p99_ms": 0.7740000000000009,
+      "gateway_cpu_cores": 0.44247345068666233,
+      "gateway_rss_mb": 114.696192
+    },
+    {
+      "surface": "anthropic",
+      "target_rps": 1000,
+      "direct": {
+        "rate": 1000.0125314570354,
+        "requests": 20000,
+        "success_ratio": 1,
+        "throughput": 998.9664285751659,
+        "latency": {
+          "p50_ms": 20.749,
+          "p90_ms": 21.089,
+          "p95_ms": 21.188,
+          "p99_ms": 21.32,
+          "max_ms": 24.069,
+          "mean_ms": 20.713
+        }
+      },
+      "gateway": {
+        "rate": 1000.0021683547018,
+        "requests": 20000,
+        "success_ratio": 1,
+        "throughput": 998.9281285412276,
+        "latency": {
+          "p50_ms": 21.038,
+          "p90_ms": 21.829,
+          "p95_ms": 21.919,
+          "p99_ms": 22.215,
+          "max_ms": 25.262,
+          "mean_ms": 21.208
+        }
+      },
+      "added_p50_ms": 0.2890000000000015,
+      "added_p95_ms": 0.7310000000000016,
+      "added_p99_ms": 0.8949999999999996,
+      "gateway_cpu_cores": 0.7910481697472072,
+      "gateway_rss_mb": 111.607808
+    },
+    {
+      "surface": "anthropic",
+      "target_rps": 2000,
+      "direct": {
+        "rate": 2000.079119429818,
+        "requests": 40000,
+        "success_ratio": 1,
+        "throughput": 1998.0443423701136,
+        "latency": {
+          "p50_ms": 20.454,
+          "p90_ms": 20.878,
+          "p95_ms": 21.065,
+          "p99_ms": 21.366,
+          "max_ms": 24.208,
+          "mean_ms": 20.529
+        }
+      },
+      "gateway": {
+        "rate": 2000.061724904923,
+        "requests": 40000,
+        "success_ratio": 1,
+        "throughput": 1997.9707466258003,
+        "latency": {
+          "p50_ms": 21.213,
+          "p90_ms": 22.085,
+          "p95_ms": 22.4,
+          "p99_ms": 24.135,
+          "max_ms": 34.548,
+          "mean_ms": 21.417
+        }
+      },
+      "added_p50_ms": 0.7590000000000003,
+      "added_p95_ms": 1.3349999999999973,
+      "added_p99_ms": 2.769000000000002,
+      "gateway_cpu_cores": 1.3424578824511881,
+      "gateway_rss_mb": 113.311744
+    },
+    {
+      "surface": "anthropic",
+      "target_rps": 4000,
+      "direct": {
+        "rate": 4000.054791720297,
+        "requests": 79998,
+        "success_ratio": 1,
+        "throughput": 3995.816332848003,
+        "latency": {
+          "p50_ms": 20.608,
+          "p90_ms": 21.08,
+          "p95_ms": 21.253,
+          "p99_ms": 21.69,
+          "max_ms": 25.951,
+          "mean_ms": 20.666
+        }
+      },
+      "gateway": {
+        "rate": 3999.9480008759965,
+        "requests": 79996,
+        "success_ratio": 1,
+        "throughput": 3995.619446703482,
+        "latency": {
+          "p50_ms": 24.364,
+          "p90_ms": 34.439,
+          "p95_ms": 41.205,
+          "p99_ms": 61.833,
+          "max_ms": 150.236,
+          "mean_ms": 26.992
+        }
+      },
+      "added_p50_ms": 3.7560000000000002,
+      "added_p95_ms": 19.951999999999998,
+      "added_p99_ms": 40.143,
+      "gateway_cpu_cores": 1.9127399198043025,
+      "gateway_rss_mb": 162.779136
+    }
+  ]
+}

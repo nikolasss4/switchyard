@@ -1,0 +1,12 @@
+{
+  "time": "2026-10-31T12:35:41Z",
+  "git_sha": "59162a3c631485b84f30816e58d3df34ff5e0b5e",
+  "go_version": "go1.27.3",
+  "os": "darwin",
+  "arch": "arm64",
+  "cpus": 12,
+  "cpu_model": "Apple M6",
+  "memory": "34 GB",
+  "host": "local",
+  "note": "load generator, gateway, mocks, Postgres and Redis share this machine"
+}

@@ -1,0 +1,660 @@
+{
+  "embedder": "bge-base-en-v1.5",
+  "negatives": 40,
+  "pairs": [
+    {
+      "A": "How do I reverse a list in Python?",
+      "B": "How do I reverse a list in Python ?",
+      "Same": true,
+      "Category": "whitespace",
+      "similarity": 1.0000000000000002
+    },
+    {
+      "A": "WHAT IS A MUTEX?",
+      "B": "what is a mutex?",
+      "Same": true,
+      "Category": "case",
+      "similarity": 1.0000000000000002
+    },
+    {
+      "A": "What is the capital of France?",
+      "B": "What is the capital of France?",
+      "Same": true,
+      "Category": "exact",
+      "similarity": 1
+    },
+    {
+      "A": "What is the exchange rate from USD to EUR?",
+      "B": "What is the exchange rate from EUR to USD?",
+      "Same": false,
+      "Category": "direction",
+      "similarity": 0.9946989007359602
+    },
+    {
+      "A": "How many days are in a leap year?",
+      "B": "A leap year has how many days?",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.9858728752438473
+    },
+    {
+      "A": "Convert 5 km to miles.",
+      "B": "Convert 5 miles to km.",
+      "Same": false,
+      "Category": "direction",
+      "similarity": 0.9847737739783492
+    },
+    {
+      "A": "List three benefits of exercise.",
+      "B": "Name three benefits of exercising.",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.9803153350620364
+    },
+    {
+      "A": "How do I make my resume stand out?",
+      "B": "Tips to make a resume stand out?",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.9785600380907669
+    },
+    {
+      "A": "How do I reverse a list in Python?",
+      "B": "What's the way to reverse a Python list?",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.9769516290287515
+    },
+    {
+      "A": "What is the difference between TCP and UDP?",
+      "B": "How does TCP differ from UDP?",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.9729064922374202
+    },
+    {
+      "A": "What does HTTP status 429 mean?",
+      "B": "Meaning of the HTTP 429 status code?",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.9685503010057994
+    },
+    {
+      "A": "What is the GDP of Germany?",
+      "B": "What's Germany's GDP?",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.9666697904742806
+    },
+    {
+      "A": "Sort these numbers ascending: 5, 2, 9",
+      "B": "Sort these numbers descending: 5, 2, 9",
+      "Same": false,
+      "Category": "direction",
+      "similarity": 0.9652642039315208
+    },
+    {
+      "A": "Is coffee bad for your heart?",
+      "B": "Does drinking coffee harm the heart?",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.9628860440023772
+    },
+    {
+      "A": "Summarize the plot of Hamlet in two sentences.",
+      "B": "Give a two-sentence summary of Hamlet's plot.",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.9617410701662022
+    },
+    {
+      "A": "Write a haiku about autumn.",
+      "B": "Compose a haiku on the theme of autumn.",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.9608781168601902
+    },
+    {
+      "A": "Explain recursion",
+      "B": "Explain recursion.",
+      "Same": true,
+      "Category": "punctuation",
+      "similarity": 0.9579953968058981
+    },
+    {
+      "A": "How do I undo the last git commit?",
+      "B": "how can i undo my most recent git commit",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.9559721473622634
+    },
+    {
+      "A": "How do I install Node.js on Ubuntu?",
+      "B": "Steps to install Node.js on Ubuntu",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.9540103873489909
+    },
+    {
+      "A": "How does compound interest work?",
+      "B": "Explain how compound interest works.",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.9532529615715167
+    },
+    {
+      "A": "Is coffee bad for your heart?",
+      "B": "Is coffee good for your heart?",
+      "Same": false,
+      "Category": "polarity",
+      "similarity": 0.9507677899688433
+    },
+    {
+      "A": "Recommend a good beginner book on statistics.",
+      "B": "What's a good statistics book for beginners?",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.9507006610430124
+    },
+    {
+      "A": "What is the time complexity of binary search?",
+      "B": "Binary search: what's its time complexity?",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.9496044653581658
+    },
+    {
+      "A": "How do I center a div with CSS?",
+      "B": "What's the CSS to center a div?",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.9480917693079904
+    },
+    {
+      "A": "What are the symptoms of dehydration?",
+      "B": "What symptoms does dehydration cause?",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.9479793285241294
+    },
+    {
+      "A": "Can dogs eat grapes?",
+      "B": "Is it safe for dogs to eat grapes?",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.9462830127094588
+    },
+    {
+      "A": "How long should I boil an egg for a soft yolk?",
+      "B": "How long should I boil an egg for a hard yolk?",
+      "Same": false,
+      "Category": "attribute swap",
+      "similarity": 0.9410559031116589
+    },
+    {
+      "A": "How do I reverse a list in Python?",
+      "B": "How do I reverse a list in JavaScript?",
+      "Same": false,
+      "Category": "language",
+      "similarity": 0.9397101228453679
+    },
+    {
+      "A": "What is the capital of France?",
+      "B": "what's the capital city of france",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.9378399376274786
+    },
+    {
+      "A": "How do I undo the last git commit?",
+      "B": "How do I undo the last git push?",
+      "Same": false,
+      "Category": "entity swap",
+      "similarity": 0.9364772396739681
+    },
+    {
+      "A": "How do vaccines work?",
+      "B": "Explain how vaccines work.",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.9362132722047617
+    },
+    {
+      "A": "What does an API gateway do?",
+      "B": "What is the job of an API gateway?",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.9345155399007121
+    },
+    {
+      "A": "What is the GDP of Germany?",
+      "B": "What is the GDP per capita of Germany?",
+      "Same": false,
+      "Category": "attribute swap",
+      "similarity": 0.9259327905461582
+    },
+    {
+      "A": "Define photosynthesis.",
+      "B": "What is photosynthesis?",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.9256552717269557
+    },
+    {
+      "A": "How do I center a div with CSS?",
+      "B": "How do I center a div vertically with CSS?",
+      "Same": false,
+      "Category": "scope",
+      "similarity": 0.9251688227155129
+    },
+    {
+      "A": "Who wrote Pride and Prejudice?",
+      "B": "Who is the author of Pride and Prejudice?",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.9240571855180956
+    },
+    {
+      "A": "How do I install Node.js on Ubuntu?",
+      "B": "How do I install Node.js on Windows?",
+      "Same": false,
+      "Category": "entity swap",
+      "similarity": 0.9214334023963736
+    },
+    {
+      "A": "Translate 'good morning' into Spanish.",
+      "B": "How do you say 'good morning' in Spanish?",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.9187147574040437
+    },
+    {
+      "A": "What is a Kubernetes pod?",
+      "B": "Explain what a pod is in Kubernetes.",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.9184589034679612
+    },
+    {
+      "A": "What is the time complexity of binary search?",
+      "B": "What is the space complexity of binary search?",
+      "Same": false,
+      "Category": "attribute swap",
+      "similarity": 0.9155242221943046
+    },
+    {
+      "A": "Explain what a circuit breaker is in distributed systems.",
+      "B": "Can you explain the circuit breaker pattern in distributed systems?",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.9153184057289984
+    },
+    {
+      "A": "What is a black hole?",
+      "B": "Can you tell me what a black hole is?",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.9113670056190233
+    },
+    {
+      "A": "What is the boiling point of water at sea level?",
+      "B": "At sea level, at what temperature does water boil?",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.9071404557610211
+    },
+    {
+      "A": "Give me a recipe for pancakes.",
+      "B": "Give me a recipe for gluten-free pancakes.",
+      "Same": false,
+      "Category": "constraint",
+      "similarity": 0.9030597469285637
+    },
+    {
+      "A": "Write a haiku about autumn.",
+      "B": "Write a haiku about spring.",
+      "Same": false,
+      "Category": "entity swap",
+      "similarity": 0.900796369567089
+    },
+    {
+      "A": "How long should I boil an egg for a soft yolk?",
+      "B": "For a runny yolk, how many minutes do I boil an egg?",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.898359885571189
+    },
+    {
+      "A": "Summarize the plot of Hamlet in two sentences.",
+      "B": "Summarize the plot of Macbeth in two sentences.",
+      "Same": false,
+      "Category": "entity swap",
+      "similarity": 0.8972697347851079
+    },
+    {
+      "A": "What should I do if my flight is delayed?",
+      "B": "What should I do if my flight is cancelled?",
+      "Same": false,
+      "Category": "entity swap",
+      "similarity": 0.8957470149132987
+    },
+    {
+      "A": "What's the population of Japan?",
+      "B": "How many people live in Japan?",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.8937876354824161
+    },
+    {
+      "A": "How many days are in a leap year?",
+      "B": "How many days are in February in a leap year?",
+      "Same": false,
+      "Category": "scope",
+      "similarity": 0.8935566435635148
+    },
+    {
+      "A": "Should I use tabs or spaces in Python?",
+      "B": "Should I use tabs or spaces in Go?",
+      "Same": false,
+      "Category": "language",
+      "similarity": 0.8884185848672678
+    },
+    {
+      "A": "What is 17 times 23?",
+      "B": "What is 17 times 24?",
+      "Same": false,
+      "Category": "number",
+      "similarity": 0.8877498117116397
+    },
+    {
+      "A": "Convert 5 km to miles.",
+      "B": "Convert 50 km to miles.",
+      "Same": false,
+      "Category": "number",
+      "similarity": 0.8871283796256527
+    },
+    {
+      "A": "Who was the first person to walk on the moon?",
+      "B": "Who was the second person to walk on the moon?",
+      "Same": false,
+      "Category": "ordinal",
+      "similarity": 0.88702845006684
+    },
+    {
+      "A": "Why is the sky blue?",
+      "B": "What makes the sky look blue?",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.8867901932844442
+    },
+    {
+      "A": "Translate 'good morning' into Spanish.",
+      "B": "Translate 'good morning' into French.",
+      "Same": false,
+      "Category": "language",
+      "similarity": 0.8802244222960586
+    },
+    {
+      "A": "Write a haiku about autumn.",
+      "B": "Write a limerick about autumn.",
+      "Same": false,
+      "Category": "format",
+      "similarity": 0.8781097676319678
+    },
+    {
+      "A": "Recommend a good beginner book on statistics.",
+      "B": "Recommend a good advanced book on statistics.",
+      "Same": false,
+      "Category": "attribute swap",
+      "similarity": 0.8751757166588606
+    },
+    {
+      "A": "What causes the seasons on Earth?",
+      "B": "Why does Earth have seasons?",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.8711336344920914
+    },
+    {
+      "A": "Give me a recipe for pancakes.",
+      "B": "Give me a recipe for waffles.",
+      "Same": false,
+      "Category": "entity swap",
+      "similarity": 0.8708355106483062
+    },
+    {
+      "A": "What is the speed of light?",
+      "B": "how fast does light travel",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.8663450778135828
+    },
+    {
+      "A": "What's the tallest mountain in the world?",
+      "B": "Which mountain is the highest on Earth?",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.8550848986010207
+    },
+    {
+      "A": "What is the boiling point of water at sea level?",
+      "B": "What is the freezing point of water at sea level?",
+      "Same": false,
+      "Category": "attribute swap",
+      "similarity": 0.8504319595430065
+    },
+    {
+      "A": "Give me a recipe for pancakes.",
+      "B": "Can you share a pancake recipe?",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.8438564337998845
+    },
+    {
+      "A": "List three benefits of exercise.",
+      "B": "List three risks of exercise.",
+      "Same": false,
+      "Category": "polarity",
+      "similarity": 0.8420710238873607
+    },
+    {
+      "A": "Explain quicksort.",
+      "B": "Explain mergesort.",
+      "Same": false,
+      "Category": "entity swap",
+      "similarity": 0.8410878153227024
+    },
+    {
+      "A": "How do I install Node.js on Ubuntu?",
+      "B": "How do I uninstall Node.js on Ubuntu?",
+      "Same": false,
+      "Category": "polarity",
+      "similarity": 0.8406659249988603
+    },
+    {
+      "A": "How do I make my resume stand out?",
+      "B": "How do I make my cover letter stand out?",
+      "Same": false,
+      "Category": "entity swap",
+      "similarity": 0.838746514518442
+    },
+    {
+      "A": "Is it safe to eat raw chicken?",
+      "B": "Is it safe to eat raw salmon?",
+      "Same": false,
+      "Category": "entity swap",
+      "similarity": 0.8315585553311028
+    },
+    {
+      "A": "How do I fix a leaking tap?",
+      "B": "How can I repair a dripping faucet?",
+      "Same": true,
+      "Category": "paraphrase",
+      "similarity": 0.8303863087495887
+    },
+    {
+      "A": "Explain what a circuit breaker is in distributed systems.",
+      "B": "Explain what a circuit breaker is in electrical wiring.",
+      "Same": false,
+      "Category": "domain",
+      "similarity": 0.8278072443375313
+    },
+    {
+      "A": "Can dogs eat grapes?",
+      "B": "Can cats eat grapes?",
+      "Same": false,
+      "Category": "entity swap",
+      "similarity": 0.8225691871141088
+    },
+    {
+      "A": "What's the tallest mountain in the world?",
+      "B": "What's the tallest mountain in Europe?",
+      "Same": false,
+      "Category": "scope",
+      "similarity": 0.8143539948468019
+    },
+    {
+      "A": "What does HTTP status 429 mean?",
+      "B": "What does HTTP status 503 mean?",
+      "Same": false,
+      "Category": "number",
+      "similarity": 0.8069798991360988
+    },
+    {
+      "A": "Who wrote Pride and Prejudice?",
+      "B": "Who wrote Sense and Sensibility?",
+      "Same": false,
+      "Category": "entity swap",
+      "similarity": 0.8061490536902747
+    },
+    {
+      "A": "What was the population of Japan in 2000?",
+      "B": "What was the population of Japan in 2020?",
+      "Same": false,
+      "Category": "year",
+      "similarity": 0.7994977470306074
+    },
+    {
+      "A": "What year did World War II end?",
+      "B": "What year did World War I end?",
+      "Same": false,
+      "Category": "number",
+      "similarity": 0.7893324824589442
+    },
+    {
+      "A": "What are the side effects of ibuprofen?",
+      "B": "What are the side effects of paracetamol?",
+      "Same": false,
+      "Category": "entity swap",
+      "similarity": 0.7778528523551325
+    },
+    {
+      "A": "What is the capital of France?",
+      "B": "What is the capital of Germany?",
+      "Same": false,
+      "Category": "entity swap",
+      "similarity": 0.6975091522071516
+    },
+    {
+      "A": "What is the difference between TCP and UDP?",
+      "B": "What is the difference between HTTP and HTTPS?",
+      "Same": false,
+      "Category": "entity swap",
+      "similarity": 0.6289699965184379
+    }
+  ],
+  "positives": 40,
+  "thresholds": [
+    {
+      "threshold": 0.7,
+      "hit_rate": 1,
+      "wrong_hit_rate": 0.95,
+      "hits": 40,
+      "wrong_hits": 38
+    },
+    {
+      "threshold": 0.75,
+      "hit_rate": 1,
+      "wrong_hit_rate": 0.95,
+      "hits": 40,
+      "wrong_hits": 38
+    },
+    {
+      "threshold": 0.8,
+      "hit_rate": 1,
+      "wrong_hit_rate": 0.875,
+      "hits": 40,
+      "wrong_hits": 35
+    },
+    {
+      "threshold": 0.85,
+      "hit_rate": 0.95,
+      "wrong_hit_rate": 0.625,
+      "hits": 38,
+      "wrong_hits": 25
+    },
+    {
+      "threshold": 0.88,
+      "hit_rate": 0.875,
+      "wrong_hit_rate": 0.525,
+      "hits": 35,
+      "wrong_hits": 21
+    },
+    {
+      "threshold": 0.9,
+      "hit_rate": 0.8,
+      "wrong_hit_rate": 0.325,
+      "hits": 32,
+      "wrong_hits": 13
+    },
+    {
+      "threshold": 0.92,
+      "hit_rate": 0.675,
+      "wrong_hit_rate": 0.25,
+      "hits": 27,
+      "wrong_hits": 10
+    },
+    {
+      "threshold": 0.94,
+      "hit_rate": 0.55,
+      "wrong_hit_rate": 0.125,
+      "hits": 22,
+      "wrong_hits": 5
+    },
+    {
+      "threshold": 0.95,
+      "hit_rate": 0.45,
+      "wrong_hit_rate": 0.1,
+      "hits": 18,
+      "wrong_hits": 4
+    },
+    {
+      "threshold": 0.96,
+      "hit_rate": 0.325,
+      "wrong_hit_rate": 0.075,
+      "hits": 13,
+      "wrong_hits": 3
+    },
+    {
+      "threshold": 0.97,
+      "hit_rate": 0.2,
+      "wrong_hit_rate": 0.05,
+      "hits": 8,
+      "wrong_hits": 2
+    },
+    {
+      "threshold": 0.98,
+      "hit_rate": 0.125,
+      "wrong_hit_rate": 0.05,
+      "hits": 5,
+      "wrong_hits": 2
+    },
+    {
+      "threshold": 0.99,
+      "hit_rate": 0.075,
+      "wrong_hit_rate": 0.025,
+      "hits": 3,
+      "wrong_hits": 1
+    }
+  ]
+}

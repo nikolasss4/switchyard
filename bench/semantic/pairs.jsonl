@@ -1,0 +1,80 @@
+{"a": "What is the capital of France?", "b": "what's the capital city of france", "same": true, "category": "paraphrase"}
+{"a": "How do I reverse a list in Python?", "b": "What's the way to reverse a Python list?", "same": true, "category": "paraphrase"}
+{"a": "Explain what a circuit breaker is in distributed systems.", "b": "Can you explain the circuit breaker pattern in distributed systems?", "same": true, "category": "paraphrase"}
+{"a": "How many days are in a leap year?", "b": "A leap year has how many days?", "same": true, "category": "paraphrase"}
+{"a": "What does HTTP status 429 mean?", "b": "Meaning of the HTTP 429 status code?", "same": true, "category": "paraphrase"}
+{"a": "Give me a recipe for pancakes.", "b": "Can you share a pancake recipe?", "same": true, "category": "paraphrase"}
+{"a": "Who wrote Pride and Prejudice?", "b": "Who is the author of Pride and Prejudice?", "same": true, "category": "paraphrase"}
+{"a": "How do I undo the last git commit?", "b": "how can i undo my most recent git commit", "same": true, "category": "paraphrase"}
+{"a": "What is the boiling point of water at sea level?", "b": "At sea level, at what temperature does water boil?", "same": true, "category": "paraphrase"}
+{"a": "Summarize the plot of Hamlet in two sentences.", "b": "Give a two-sentence summary of Hamlet's plot.", "same": true, "category": "paraphrase"}
+{"a": "What is the difference between TCP and UDP?", "b": "How does TCP differ from UDP?", "same": true, "category": "paraphrase"}
+{"a": "Translate 'good morning' into Spanish.", "b": "How do you say 'good morning' in Spanish?", "same": true, "category": "paraphrase"}
+{"a": "How long should I boil an egg for a soft yolk?", "b": "For a runny yolk, how many minutes do I boil an egg?", "same": true, "category": "paraphrase"}
+{"a": "What causes the seasons on Earth?", "b": "Why does Earth have seasons?", "same": true, "category": "paraphrase"}
+{"a": "Write a haiku about autumn.", "b": "Compose a haiku on the theme of autumn.", "same": true, "category": "paraphrase"}
+{"a": "What is a Kubernetes pod?", "b": "Explain what a pod is in Kubernetes.", "same": true, "category": "paraphrase"}
+{"a": "How do I center a div with CSS?", "b": "What's the CSS to center a div?", "same": true, "category": "paraphrase"}
+{"a": "What's the population of Japan?", "b": "How many people live in Japan?", "same": true, "category": "paraphrase"}
+{"a": "Is coffee bad for your heart?", "b": "Does drinking coffee harm the heart?", "same": true, "category": "paraphrase"}
+{"a": "Define photosynthesis.", "b": "What is photosynthesis?", "same": true, "category": "paraphrase"}
+{"a": "How do vaccines work?", "b": "Explain how vaccines work.", "same": true, "category": "paraphrase"}
+{"a": "What are the symptoms of dehydration?", "b": "What symptoms does dehydration cause?", "same": true, "category": "paraphrase"}
+{"a": "Recommend a good beginner book on statistics.", "b": "What's a good statistics book for beginners?", "same": true, "category": "paraphrase"}
+{"a": "What is the time complexity of binary search?", "b": "Binary search: what's its time complexity?", "same": true, "category": "paraphrase"}
+{"a": "How do I make my resume stand out?", "b": "Tips to make a resume stand out?", "same": true, "category": "paraphrase"}
+{"a": "What is the speed of light?", "b": "how fast does light travel", "same": true, "category": "paraphrase"}
+{"a": "Why is the sky blue?", "b": "What makes the sky look blue?", "same": true, "category": "paraphrase"}
+{"a": "How do I install Node.js on Ubuntu?", "b": "Steps to install Node.js on Ubuntu", "same": true, "category": "paraphrase"}
+{"a": "What does an API gateway do?", "b": "What is the job of an API gateway?", "same": true, "category": "paraphrase"}
+{"a": "Can dogs eat grapes?", "b": "Is it safe for dogs to eat grapes?", "same": true, "category": "paraphrase"}
+{"a": "What is the capital of France?", "b": "What is the capital of France?", "same": true, "category": "exact"}
+{"a": "How do I reverse a list in Python?", "b": "How do I reverse a list in Python ?", "same": true, "category": "whitespace"}
+{"a": "WHAT IS A MUTEX?", "b": "what is a mutex?", "same": true, "category": "case"}
+{"a": "Explain recursion", "b": "Explain recursion.", "same": true, "category": "punctuation"}
+{"a": "What is the GDP of Germany?", "b": "What's Germany's GDP?", "same": true, "category": "paraphrase"}
+{"a": "List three benefits of exercise.", "b": "Name three benefits of exercising.", "same": true, "category": "paraphrase"}
+{"a": "What is a black hole?", "b": "Can you tell me what a black hole is?", "same": true, "category": "paraphrase"}
+{"a": "How does compound interest work?", "b": "Explain how compound interest works.", "same": true, "category": "paraphrase"}
+{"a": "What's the tallest mountain in the world?", "b": "Which mountain is the highest on Earth?", "same": true, "category": "paraphrase"}
+{"a": "How do I fix a leaking tap?", "b": "How can I repair a dripping faucet?", "same": true, "category": "paraphrase"}
+{"a": "What is the capital of France?", "b": "What is the capital of Germany?", "same": false, "category": "entity swap"}
+{"a": "Convert 5 km to miles.", "b": "Convert 5 miles to km.", "same": false, "category": "direction"}
+{"a": "Convert 5 km to miles.", "b": "Convert 50 km to miles.", "same": false, "category": "number"}
+{"a": "How do I reverse a list in Python?", "b": "How do I reverse a list in JavaScript?", "same": false, "category": "language"}
+{"a": "Translate 'good morning' into Spanish.", "b": "Translate 'good morning' into French.", "same": false, "category": "language"}
+{"a": "Who wrote Pride and Prejudice?", "b": "Who wrote Sense and Sensibility?", "same": false, "category": "entity swap"}
+{"a": "What is the boiling point of water at sea level?", "b": "What is the freezing point of water at sea level?", "same": false, "category": "attribute swap"}
+{"a": "How many days are in a leap year?", "b": "How many days are in February in a leap year?", "same": false, "category": "scope"}
+{"a": "What is 17 times 23?", "b": "What is 17 times 24?", "same": false, "category": "number"}
+{"a": "Is it safe to eat raw chicken?", "b": "Is it safe to eat raw salmon?", "same": false, "category": "entity swap"}
+{"a": "What was the population of Japan in 2000?", "b": "What was the population of Japan in 2020?", "same": false, "category": "year"}
+{"a": "How do I undo the last git commit?", "b": "How do I undo the last git push?", "same": false, "category": "entity swap"}
+{"a": "Summarize the plot of Hamlet in two sentences.", "b": "Summarize the plot of Macbeth in two sentences.", "same": false, "category": "entity swap"}
+{"a": "What is the difference between TCP and UDP?", "b": "What is the difference between HTTP and HTTPS?", "same": false, "category": "entity swap"}
+{"a": "Write a haiku about autumn.", "b": "Write a haiku about spring.", "same": false, "category": "entity swap"}
+{"a": "Write a haiku about autumn.", "b": "Write a limerick about autumn.", "same": false, "category": "format"}
+{"a": "Explain quicksort.", "b": "Explain mergesort.", "same": false, "category": "entity swap"}
+{"a": "What is the time complexity of binary search?", "b": "What is the space complexity of binary search?", "same": false, "category": "attribute swap"}
+{"a": "How do I center a div with CSS?", "b": "How do I center a div vertically with CSS?", "same": false, "category": "scope"}
+{"a": "Can dogs eat grapes?", "b": "Can cats eat grapes?", "same": false, "category": "entity swap"}
+{"a": "What are the side effects of ibuprofen?", "b": "What are the side effects of paracetamol?", "same": false, "category": "entity swap"}
+{"a": "Is coffee bad for your heart?", "b": "Is coffee good for your heart?", "same": false, "category": "polarity"}
+{"a": "What should I do if my flight is delayed?", "b": "What should I do if my flight is cancelled?", "same": false, "category": "entity swap"}
+{"a": "How do I install Node.js on Ubuntu?", "b": "How do I uninstall Node.js on Ubuntu?", "same": false, "category": "polarity"}
+{"a": "How do I install Node.js on Ubuntu?", "b": "How do I install Node.js on Windows?", "same": false, "category": "entity swap"}
+{"a": "What is the exchange rate from USD to EUR?", "b": "What is the exchange rate from EUR to USD?", "same": false, "category": "direction"}
+{"a": "How long should I boil an egg for a soft yolk?", "b": "How long should I boil an egg for a hard yolk?", "same": false, "category": "attribute swap"}
+{"a": "Give me a recipe for pancakes.", "b": "Give me a recipe for gluten-free pancakes.", "same": false, "category": "constraint"}
+{"a": "Give me a recipe for pancakes.", "b": "Give me a recipe for waffles.", "same": false, "category": "entity swap"}
+{"a": "What's the tallest mountain in the world?", "b": "What's the tallest mountain in Europe?", "same": false, "category": "scope"}
+{"a": "Recommend a good beginner book on statistics.", "b": "Recommend a good advanced book on statistics.", "same": false, "category": "attribute swap"}
+{"a": "What does HTTP status 429 mean?", "b": "What does HTTP status 503 mean?", "same": false, "category": "number"}
+{"a": "Explain what a circuit breaker is in distributed systems.", "b": "Explain what a circuit breaker is in electrical wiring.", "same": false, "category": "domain"}
+{"a": "How do I make my resume stand out?", "b": "How do I make my cover letter stand out?", "same": false, "category": "entity swap"}
+{"a": "What is the GDP of Germany?", "b": "What is the GDP per capita of Germany?", "same": false, "category": "attribute swap"}
+{"a": "List three benefits of exercise.", "b": "List three risks of exercise.", "same": false, "category": "polarity"}
+{"a": "Who was the first person to walk on the moon?", "b": "Who was the second person to walk on the moon?", "same": false, "category": "ordinal"}
+{"a": "What year did World War II end?", "b": "What year did World War I end?", "same": false, "category": "number"}
+{"a": "Sort these numbers ascending: 5, 2, 9", "b": "Sort these numbers descending: 5, 2, 9", "same": false, "category": "direction"}
+{"a": "Should I use tabs or spaces in Python?", "b": "Should I use tabs or spaces in Go?", "same": false, "category": "language"}

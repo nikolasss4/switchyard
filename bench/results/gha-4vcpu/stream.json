@@ -1,0 +1,88 @@
+{
+  "concurrency": [
+    {
+      "streams": 1000,
+      "completed": 1000,
+      "failed": 0,
+      "ttft_p50_ms": 0.953,
+      "ttft_p99_ms": 3.147,
+      "gateway_peak_rss_mb": 316.5184,
+      "gateway_peak_goroutines": 6261,
+      "gateway_cpu_cores": 0.5148182086916412,
+      "stream_seconds": 11.965388745,
+      "rss_per_stream_kb": -22.167552
+    },
+    {
+      "streams": 5000,
+      "completed": 5000,
+      "failed": 0,
+      "ttft_p50_ms": 521.612,
+      "ttft_p99_ms": 1520.841,
+      "gateway_peak_rss_mb": 779.677696,
+      "gateway_peak_goroutines": 23751,
+      "gateway_cpu_cores": 1.8388926153828007,
+      "stream_seconds": 14.258581377,
+      "rss_per_stream_kb": 92.422144
+    },
+    {
+      "streams": 10000,
+      "completed": 10000,
+      "failed": 0,
+      "ttft_p50_ms": 3948.898,
+      "ttft_p99_ms": 11840.324,
+      "gateway_peak_rss_mb": 1569.329152,
+      "gateway_peak_goroutines": 49228,
+      "gateway_cpu_cores": 1.6718107363051034,
+      "stream_seconds": 25.2181656,
+      "rss_per_stream_kb": 78.9651456
+    }
+  ],
+  "concurrency_mock": "100 tokens at 10 tokens/s (about 10 s per stream)",
+  "ttft": [
+    {
+      "surface": "openai",
+      "direct_ttft": {
+        "p50_ms": 101.641,
+        "p90_ms": 103.837,
+        "p95_ms": 104.161,
+        "p99_ms": 104.778,
+        "max_ms": 104.974,
+        "mean_ms": 0
+      },
+      "gateway_ttft": {
+        "p50_ms": 103.651,
+        "p90_ms": 105.303,
+        "p95_ms": 106.348,
+        "p99_ms": 109.574,
+        "max_ms": 110.538,
+        "mean_ms": 0
+      },
+      "added_p50_ms": 2.009999999999991,
+      "added_p99_ms": 4.795999999999992,
+      "samples": 400
+    },
+    {
+      "surface": "anthropic",
+      "direct_ttft": {
+        "p50_ms": 101.662,
+        "p90_ms": 103.244,
+        "p95_ms": 103.761,
+        "p99_ms": 104.392,
+        "max_ms": 105.289,
+        "mean_ms": 0
+      },
+      "gateway_ttft": {
+        "p50_ms": 103.648,
+        "p90_ms": 104.744,
+        "p95_ms": 107.803,
+        "p99_ms": 110.687,
+        "max_ms": 112.13,
+        "mean_ms": 0
+      },
+      "added_p50_ms": 1.98599999999999,
+      "added_p99_ms": 6.295000000000002,
+      "samples": 400
+    }
+  ],
+  "ttft_mock": "100 ms to first byte, 200 tokens/s"
+}

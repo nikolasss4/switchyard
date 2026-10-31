@@ -1,0 +1,12 @@
+{
+  "time": "2026-10-31T12:24:25Z",
+  "git_sha": "59162a3c631485b84f30816e58d3df34ff5e0b5e",
+  "go_version": "go1.27.3",
+  "os": "linux",
+  "arch": "amd64",
+  "cpus": 4,
+  "cpu_model": "AMD EPYC 7763 64-Core Processor",
+  "memory": "16 GB",
+  "host": "GitHub Actions Linux runner (ubuntu26)",
+  "note": "load generator, gateway, mocks, Postgres and Redis share this machine"
+}
